@@ -1,0 +1,6 @@
+[submodule "life-hub-web"]
+	path = life-hub-web
+	url = https://github.com/xhnan/life-hub-web.git
+[submodule "LifeHubServer"]
+	path = LifeHubServer
+	url = https://github.com/xhnan/LifeHubServer.git
