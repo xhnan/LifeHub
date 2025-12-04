@@ -4,3 +4,6 @@
 [submodule "LifeHubServer"]
 	path = LifeHubServer
 	url = https://github.com/xhnan/LifeHubServer.git
+[submodule "LifeHubAI"]
+	path = LifeHubAI
+	url = https://github.com/xhnan/LifeHubAI.git
