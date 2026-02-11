@@ -7,3 +7,9 @@
 [submodule "LifeHubAI"]
 	path = LifeHubAI
 	url = https://github.com/xhnan/LifeHubAI.git
+[submodule "LifeHubFin"]
+	path = LifeHubFin
+	url = https://github.com/xhnan/LifeHubFin.git
+[submodule "life-hub-blog"]
+	path = life-hub-blog
+	url = https://github.com/xhnan/life-hub-blog.git
