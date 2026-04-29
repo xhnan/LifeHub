@@ -13,3 +13,6 @@
 [submodule "life-hub-blog"]
 	path = life-hub-blog
 	url = https://github.com/xhnan/life-hub-blog.git
+[submodule "life_hub_health"]
+	path = life_hub_health
+	url = https://github.com/xhnan/life_hub_health.git
