@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/models/agent_models.dart';
-import '../providers/agent_provider.dart';
+import '../providers/profile_providers.dart';
 
 class FollowupPlansScreen extends ConsumerStatefulWidget {
   const FollowupPlansScreen({super.key});
@@ -16,23 +16,23 @@ class _FollowupPlansScreenState extends ConsumerState<FollowupPlansScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(agentProvider.notifier).loadFollowupPlans(activeOnly: true);
+      ref.read(followupPlansProvider.notifier).loadPlans(activeOnly: true);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final agentState = ref.watch(agentProvider);
+    final state = ref.watch(followupPlansProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text('跟踪计划'),
       ),
-      body: agentState.isLoading
+      body: state.isLoading
           ? Center(child: CircularProgressIndicator())
-          : agentState.followupPlans.isEmpty
+          : state.plans.isEmpty
               ? _buildEmptyState()
-              : _buildPlanList(agentState.followupPlans),
+              : _buildPlanList(state.plans),
     );
   }
 

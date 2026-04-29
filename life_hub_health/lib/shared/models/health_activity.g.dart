@@ -1,12 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'activity.dart';
+part of 'health_activity.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-Activity _$ActivityFromJson(Map<String, dynamic> json) => Activity(
+HealthActivity _$HealthActivityFromJson(Map<String, dynamic> json) =>
+    HealthActivity(
       id: (json['id'] as num?)?.toInt(),
       userId: (json['userId'] as num).toInt(),
       activityType: json['activityType'] as String,
@@ -21,7 +22,8 @@ Activity _$ActivityFromJson(Map<String, dynamic> json) => Activity(
           : DateTime.parse(json['createdAt'] as String),
     );
 
-Map<String, dynamic> _$ActivityToJson(Activity instance) => <String, dynamic>{
+Map<String, dynamic> _$HealthActivityToJson(HealthActivity instance) =>
+    <String, dynamic>{
       'id': instance.id,
       'userId': instance.userId,
       'activityType': instance.activityType,

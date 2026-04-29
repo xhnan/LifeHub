@@ -2,9 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/auth_user.dart';
 import '../../../../shared/services/local_storage_service.dart';
 import '../../../../shared/providers/providers.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository.dart';
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
+final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   final apiService = ref.read(apiServiceProvider);
   return AuthRepository(apiService);
 });
@@ -44,7 +45,7 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRepository _authRepository;
+  final IAuthRepository _authRepository;
   final LocalStorageService _localStorageService;
 
   AuthNotifier(this._authRepository, this._localStorageService) : super(AuthState()) {

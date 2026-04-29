@@ -1,11 +1,14 @@
 import '../../../../shared/models/agent_models.dart';
+import '../../../../shared/models/user_preferences.dart';
 import '../../../../shared/services/api_service.dart';
+import '../../domain/repositories/profile_repository.dart';
 
-class AgentRepository {
+class ProfileRepository implements IProfileRepository {
   final ApiService _apiService;
 
-  AgentRepository(this._apiService);
+  ProfileRepository(this._apiService);
 
+  @override
   Future<List<AdviceRecord>> getMyAdviceRecords({
     String? agentType,
     bool? activeOnly,
@@ -26,6 +29,7 @@ class AgentRepository {
     throw Exception(response.data['message'] ?? '获取建议记录失败');
   }
 
+  @override
   Future<List<FollowupPlan>> getMyFollowupPlans({bool? activeOnly}) async {
     final queryParams = <String, dynamic>{};
     if (activeOnly != null) queryParams['activeOnly'] = activeOnly;
@@ -42,6 +46,7 @@ class AgentRepository {
     throw Exception(response.data['message'] ?? '获取跟踪计划失败');
   }
 
+  @override
   Future<List<Checkin>> getMyCheckins({int? followupPlanId}) async {
     final queryParams = <String, dynamic>{};
     if (followupPlanId != null) queryParams['followupPlanId'] = followupPlanId;
@@ -58,6 +63,7 @@ class AgentRepository {
     throw Exception(response.data['message'] ?? '获取打卡记录失败');
   }
 
+  @override
   Future<bool> createCheckin({
     int? adviceRecordId,
     int? followupPlanId,
@@ -86,5 +92,47 @@ class AgentRepository {
       return true;
     }
     throw Exception(response.data['message'] ?? '打卡失败');
+  }
+
+  @override
+  Future<UserPreferences?> getMyPreferences() async {
+    final response = await _apiService.get('/health/agent/user-preferences/my');
+
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      if (response.data['data'] != null) {
+        return UserPreferences.fromJson(response.data['data']);
+      }
+      return null;
+    }
+    throw Exception(response.data['message'] ?? '获取偏好设置失败');
+  }
+
+  @override
+  Future<bool> savePreferences({
+    String? preferredDietStyle,
+    String? dislikedFoods,
+    String? preferredExerciseTypes,
+    String? preferredSupportStyle,
+    String? routinePattern,
+    String? motivationTags,
+    Map<String, dynamic>? habitProfile,
+  }) async {
+    final response = await _apiService.post(
+      '/health/agent/user-preferences',
+      data: {
+        'preferredDietStyle': preferredDietStyle,
+        'dislikedFoods': dislikedFoods,
+        'preferredExerciseTypes': preferredExerciseTypes,
+        'preferredSupportStyle': preferredSupportStyle,
+        'routinePattern': routinePattern,
+        'motivationTags': motivationTags,
+        'habitProfile': habitProfile,
+      },
+    );
+
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      return true;
+    }
+    throw Exception(response.data['message'] ?? '保存偏好设置失败');
   }
 }

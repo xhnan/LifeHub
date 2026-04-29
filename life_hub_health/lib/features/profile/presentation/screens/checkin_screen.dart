@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/models/agent_models.dart';
-import '../providers/agent_provider.dart';
+import '../providers/profile_providers.dart';
 
 class CheckinScreen extends ConsumerStatefulWidget {
   const CheckinScreen({super.key});
@@ -16,23 +16,23 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(agentProvider.notifier).loadCheckins();
+      ref.read(checkinsProvider.notifier).loadCheckins();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final agentState = ref.watch(agentProvider);
+    final state = ref.watch(checkinsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text('打卡记录'),
       ),
-      body: agentState.isLoading
+      body: state.isLoading
           ? Center(child: CircularProgressIndicator())
-          : agentState.checkins.isEmpty
+          : state.checkins.isEmpty
               ? _buildEmptyState()
-              : _buildCheckinList(agentState.checkins),
+              : _buildCheckinList(state.checkins),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCheckinDialog(context),
         backgroundColor: AppColors.primary,
@@ -356,7 +356,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final success = await ref.read(agentProvider.notifier).createCheckin(
+                final success = await ref.read(checkinsProvider.notifier).createCheckin(
                   checkinDate: DateTime.now(),
                   completionStatus: selectedStatus,
                   adherenceScore: adherenceScore,

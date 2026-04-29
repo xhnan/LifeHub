@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
-import '../providers/user_preferences_provider.dart';
+import '../providers/profile_providers.dart';
 
 class UserPreferencesScreen extends ConsumerStatefulWidget {
   const UserPreferencesScreen({super.key});

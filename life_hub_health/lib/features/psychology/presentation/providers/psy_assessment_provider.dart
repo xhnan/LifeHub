@@ -1,16 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/psy_assessment.dart';
 import '../../../../shared/providers/providers.dart';
+import '../../domain/repositories/psychology_repository.dart';
+import '../../data/repositories/psychology_repository.dart';
 import '../../data/datasources/assessment_datasource.dart';
-import '../../data/repositories/psy_assessment_repository.dart';
 
-final psyAssessmentRepositoryProvider = Provider<PsyAssessmentRepository>((ref) {
+final psychologyRepositoryProvider = Provider<IPsychologyRepository>((ref) {
   final apiService = ref.read(apiServiceProvider);
-  return PsyAssessmentRepository(apiService);
+  return PsychologyRepository(apiService);
 });
 
 final psyAssessmentProvider = StateNotifierProvider<PsyAssessmentNotifier, PsyAssessmentState>((ref) {
-  final repository = ref.read(psyAssessmentRepositoryProvider);
+  final repository = ref.read(psychologyRepositoryProvider);
   return PsyAssessmentNotifier(repository);
 });
 
@@ -43,7 +44,7 @@ class PsyAssessmentState {
 }
 
 class PsyAssessmentNotifier extends StateNotifier<PsyAssessmentState> {
-  final PsyAssessmentRepository _repository;
+  final IPsychologyRepository _repository;
 
   PsyAssessmentNotifier(this._repository) : super(PsyAssessmentState()) {
     loadAssessments();

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/models/agent_models.dart';
-import '../providers/agent_provider.dart';
+import '../providers/profile_providers.dart';
 
 class AdviceRecordsScreen extends ConsumerStatefulWidget {
   const AdviceRecordsScreen({super.key});
@@ -16,13 +16,13 @@ class _AdviceRecordsScreenState extends ConsumerState<AdviceRecordsScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(agentProvider.notifier).loadAdviceRecords(activeOnly: true);
+      ref.read(adviceRecordsProvider.notifier).loadRecords(activeOnly: true);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final agentState = ref.watch(agentProvider);
+    final state = ref.watch(adviceRecordsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,9 +31,9 @@ class _AdviceRecordsScreenState extends ConsumerState<AdviceRecordsScreen> {
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'all') {
-                ref.read(agentProvider.notifier).loadAdviceRecords();
+                ref.read(adviceRecordsProvider.notifier).loadRecords();
               } else {
-                ref.read(agentProvider.notifier).loadAdviceRecords(agentType: value);
+                ref.read(adviceRecordsProvider.notifier).loadRecords(agentType: value);
               }
             },
             itemBuilder: (context) => [
@@ -45,11 +45,11 @@ class _AdviceRecordsScreenState extends ConsumerState<AdviceRecordsScreen> {
           ),
         ],
       ),
-      body: agentState.isLoading
+      body: state.isLoading
           ? Center(child: CircularProgressIndicator())
-          : agentState.adviceRecords.isEmpty
+          : state.records.isEmpty
               ? _buildEmptyState()
-              : _buildAdviceList(agentState.adviceRecords),
+              : _buildAdviceList(state.records),
     );
   }
 

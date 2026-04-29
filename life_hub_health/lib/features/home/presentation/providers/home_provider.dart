@@ -2,9 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/daily_summary.dart';
 import '../../../../shared/models/weight_log.dart';
 import '../../../../shared/providers/providers.dart';
+import '../../domain/repositories/home_repository.dart';
 import '../../data/repositories/home_repository.dart';
 
-final homeRepositoryProvider = Provider<HomeRepository>((ref) {
+final homeRepositoryProvider = Provider<IHomeRepository>((ref) {
   final apiService = ref.read(apiServiceProvider);
   return HomeRepository(apiService);
 });
@@ -43,7 +44,7 @@ class HomeState {
 }
 
 class HomeNotifier extends StateNotifier<HomeState> {
-  final HomeRepository _repository;
+  final IHomeRepository _repository;
 
   HomeNotifier(this._repository) : super(HomeState()) {
     loadDashboard();

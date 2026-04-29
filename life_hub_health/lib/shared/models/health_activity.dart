@@ -1,9 +1,9 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'activity.g.dart';
+part 'health_activity.g.dart';
 
 @JsonSerializable()
-class Activity {
+class HealthActivity {
   final int? id;
   final int userId;
   final String activityType;
@@ -13,7 +13,7 @@ class Activity {
   final String? description;
   final DateTime? createdAt;
 
-  Activity({
+  HealthActivity({
     this.id,
     required this.userId,
     required this.activityType,
@@ -24,6 +24,6 @@ class Activity {
     this.createdAt,
   });
 
-  factory Activity.fromJson(Map<String, dynamic> json) => _$ActivityFromJson(json);
-  Map<String, dynamic> toJson() => _$ActivityToJson(this);
+  factory HealthActivity.fromJson(Map<String, dynamic> json) => _$HealthActivityFromJson(json);
+  Map<String, dynamic> toJson() => _$HealthActivityToJson(this);
 }
