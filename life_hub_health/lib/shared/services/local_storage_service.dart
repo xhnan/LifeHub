@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../core/constants/app_constants.dart';
@@ -15,9 +17,31 @@ class LocalStorageService {
   Future<void> init() async {
     if (_initialized) return;
     await Hive.initFlutter();
-    _cacheBox = await Hive.openBox(AppConstants.cacheBox);
-    _settingsBox = await Hive.openBox(AppConstants.settingsBox);
+
+    final encryptionKey = await _getOrCreateEncryptionKey();
+    final cipher = HiveAesCipher(encryptionKey);
+
+    _cacheBox = await Hive.openBox(
+      AppConstants.cacheBox,
+      encryptionCipher: cipher,
+    );
+    _settingsBox = await Hive.openBox(
+      AppConstants.settingsBox,
+      encryptionCipher: cipher,
+    );
     _initialized = true;
+  }
+
+  Future<List<int>> _getOrCreateEncryptionKey() async {
+    const keyName = 'hive_encryption_key';
+    final existingKey = await _secureStorage.read(key: keyName);
+    if (existingKey != null) {
+      return base64Decode(existingKey);
+    }
+    final random = Random.secure();
+    final key = List<int>.generate(32, (_) => random.nextInt(256));
+    await _secureStorage.write(key: keyName, value: base64Encode(key));
+    return key;
   }
 
   Box get cacheBox {

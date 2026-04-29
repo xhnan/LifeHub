@@ -12,7 +12,6 @@ class SseService {
   Future<Stream<Event>> streamChat({
     required String message,
     int historyLimit = 10,
-    String? systemPrompt,
     bool useAgent = true,
   }) async {
     final token = await _localStorageService.getToken();
@@ -31,7 +30,6 @@ class SseService {
     final body = jsonEncode({
       'message': message,
       'historyLimit': historyLimit,
-      'systemPrompt': systemPrompt,
       'useAgent': useAgent,
     });
 

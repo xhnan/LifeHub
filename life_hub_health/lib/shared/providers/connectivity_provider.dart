@@ -9,7 +9,7 @@ final isConnectedProvider = Provider<bool>((ref) {
   final connectivity = ref.watch(connectivityProvider);
   return connectivity.when(
     data: (result) => result != ConnectivityResult.none,
-    loading: () => true,
-    error: (_, __) => true,
+    loading: () => false,
+    error: (_, __) => false,
   );
 });

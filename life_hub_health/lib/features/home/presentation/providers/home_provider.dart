@@ -15,6 +15,8 @@ final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
   return HomeNotifier(repository);
 });
 
+const _sentinel = Object();
+
 class HomeState {
   final bool isLoading;
   final DailySummary? todaySummary;
@@ -30,14 +32,14 @@ class HomeState {
 
   HomeState copyWith({
     bool? isLoading,
-    DailySummary? todaySummary,
-    WeightLog? latestWeight,
+    Object? todaySummary = _sentinel,
+    Object? latestWeight = _sentinel,
     String? error,
   }) {
     return HomeState(
       isLoading: isLoading ?? this.isLoading,
-      todaySummary: todaySummary ?? this.todaySummary,
-      latestWeight: latestWeight ?? this.latestWeight,
+      todaySummary: todaySummary == _sentinel ? this.todaySummary : todaySummary as DailySummary?,
+      latestWeight: latestWeight == _sentinel ? this.latestWeight : latestWeight as WeightLog?,
       error: error,
     );
   }

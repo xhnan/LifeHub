@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/models/psy_assessment.dart';
 import '../providers/psy_assessment_provider.dart';
@@ -50,8 +51,118 @@ class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
     }
   }
 
+  void _showCrisisDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 8),
+            Text('安全提醒'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '您的评估结果显示可能存在自伤想法。请记住，您并不孤单，专业帮助随时可用。',
+              style: TextStyle(fontSize: 15),
+            ),
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('24小时心理援助热线：', style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 4),
+                  Text('全国：400-161-9995'),
+                  Text('北京：010-82951332'),
+                  Text('希望24热线：400-161-9995'),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              '如果您正处于紧急危险中，请立即拨打 120 或前往最近的急诊室。',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Still submit the assessment
+              _submitAfterCrisis();
+            },
+            child: Text('我已知晓，继续提交'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: Text('关闭'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitAfterCrisis() async {
+    final provider = ref.read(psyAssessmentProvider.notifier);
+    final severity = provider.getSeverity(widget.scaleName, totalScore);
+    final analysis = provider.getAnalysis(widget.scaleName, totalScore);
+
+    final success = await provider.submitAssessment(
+      scaleName: widget.scaleName,
+      totalScore: totalScore,
+      severityLevel: severity,
+      resultAnalysis: analysis,
+    );
+
+    if (success && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Text('评估结果'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('总分：$totalScore', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              SizedBox(height: 8),
+              Text('严重程度：$severity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              SizedBox(height: 16),
+              Text(analysis, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () { context.pop(); context.pop(); },
+              child: Text('确定'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     if (!isComplete) return;
+
+    // Crisis check: PHQ-9 Q9 (index 8) self-harm ideation
+    if (widget.scaleName == 'PHQ-9' && (answers[8] ?? 0) >= 1) {
+      _showCrisisDialog();
+      return;
+    }
 
     final provider = ref.read(psyAssessmentProvider.notifier);
     final severity = provider.getSeverity(widget.scaleName, totalScore);
@@ -103,8 +214,8 @@ class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
+                context.pop();
+                context.pop();
               },
               child: Text('确定'),
             ),

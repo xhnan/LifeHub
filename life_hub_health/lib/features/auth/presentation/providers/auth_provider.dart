@@ -16,6 +16,8 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(authRepository, localStorageService);
 });
 
+const _sentinel = Object();
+
 class AuthState {
   final bool isLoading;
   final AuthUser? user;
@@ -31,13 +33,13 @@ class AuthState {
 
   AuthState copyWith({
     bool? isLoading,
-    AuthUser? user,
+    Object? user = _sentinel,
     String? error,
     bool? isAuthenticated,
   }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
-      user: user ?? this.user,
+      user: user == _sentinel ? this.user : user as AuthUser?,
       error: error,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     );

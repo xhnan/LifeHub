@@ -187,6 +187,8 @@ class CheckinsNotifier extends StateNotifier<CheckinsState> {
   }
 }
 
+const _sentinel = Object();
+
 // User Preferences
 class UserPreferencesState {
   final bool isLoading;
@@ -201,12 +203,12 @@ class UserPreferencesState {
 
   UserPreferencesState copyWith({
     bool? isLoading,
-    UserPreferences? preferences,
+    Object? preferences = _sentinel,
     String? error,
   }) {
     return UserPreferencesState(
       isLoading: isLoading ?? this.isLoading,
-      preferences: preferences ?? this.preferences,
+      preferences: preferences == _sentinel ? this.preferences : preferences as UserPreferences?,
       error: error,
     );
   }

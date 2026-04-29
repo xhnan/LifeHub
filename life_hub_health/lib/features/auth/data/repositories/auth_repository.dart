@@ -1,5 +1,5 @@
-import '../../../shared/models/auth_user.dart';
-import '../../../shared/services/api_service.dart';
+import '../../../../shared/models/auth_user.dart';
+import '../../../../shared/services/api_service.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepository implements IAuthRepository {

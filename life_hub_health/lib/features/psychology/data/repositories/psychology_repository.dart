@@ -1,5 +1,6 @@
 import '../../../../shared/models/psy_assessment.dart';
 import '../../../../shared/models/psy_profile.dart';
+import '../../../../shared/models/daily_mood.dart';
 import '../../../../shared/services/api_service.dart';
 import '../../domain/repositories/psychology_repository.dart';
 
@@ -93,5 +94,50 @@ class PsychologyRepository implements IPsychologyRepository {
       return true;
     }
     throw Exception(response.data['message'] ?? '保存评估失败');
+  }
+
+  @override
+  Future<List<DailyMood>> getMyMoods() async {
+    final response = await _apiService.get('/health/psychology/daily-moods/my');
+
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      final List<dynamic> data = response.data['data'];
+      return data.map((json) => DailyMood.fromJson(json)).toList();
+    }
+    throw Exception(response.data['message'] ?? '获取心情记录失败');
+  }
+
+  @override
+  Future<DailyMood?> getLatestMood() async {
+    final response = await _apiService.get('/health/psychology/daily-moods/latest');
+
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      if (response.data['data'] != null) {
+        return DailyMood.fromJson(response.data['data']);
+      }
+      return null;
+    }
+    throw Exception(response.data['message'] ?? '获取最新心情失败');
+  }
+
+  @override
+  Future<bool> recordMood({
+    required int moodScore,
+    String? primaryEmotion,
+    String? journalText,
+  }) async {
+    final response = await _apiService.post(
+      '/health/psychology/daily-moods',
+      data: {
+        'moodScore': moodScore,
+        'primaryEmotion': primaryEmotion,
+        'journalText': journalText,
+      },
+    );
+
+    if (response.statusCode == 200 && response.data['success'] == true) {
+      return true;
+    }
+    throw Exception(response.data['message'] ?? '记录心情失败');
   }
 }

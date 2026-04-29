@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/colors.dart';
-import 'assessment_screen.dart';
+import '../../../../core/utils/date_utils.dart';
+import '../providers/mood_provider.dart';
 
 class PsychologyScreen extends ConsumerWidget {
   const PsychologyScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final moodState = ref.watch(moodProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('心理健康'),
@@ -17,18 +21,18 @@ class PsychologyScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildMoodTracker(context),
+            _buildMoodTracker(context, ref),
             SizedBox(height: 16),
             _buildQuickActions(context),
             SizedBox(height: 16),
-            _buildRecentMoods(),
+            _buildRecentMoods(moodState),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMoodTracker(BuildContext context) {
+  Widget _buildMoodTracker(BuildContext context, WidgetRef ref) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -47,11 +51,11 @@ class PsychologyScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildMoodOption(context, '😊', '开心'),
-                _buildMoodOption(context, '😌', '平静'),
-                _buildMoodOption(context, '😔', '难过'),
-                _buildMoodOption(context, '😤', '生气'),
-                _buildMoodOption(context, '😰', '焦虑'),
+                _buildMoodOption(context, ref, 8, '😊', '开心', 'happy'),
+                _buildMoodOption(context, ref, 6, '😌', '平静', 'calm'),
+                _buildMoodOption(context, ref, 3, '😔', '难过', 'sad'),
+                _buildMoodOption(context, ref, 2, '😤', '生气', 'angry'),
+                _buildMoodOption(context, ref, 4, '😰', '焦虑', 'anxious'),
               ],
             ),
           ],
@@ -60,13 +64,18 @@ class PsychologyScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMoodOption(BuildContext context, String emoji, String label) {
+  Widget _buildMoodOption(BuildContext context, WidgetRef ref, int score, String emoji, String label, String emotion) {
     return InkWell(
-      onTap: () {
-        // TODO: Save mood
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已记录今日心情：$label')),
+      onTap: () async {
+        final success = await ref.read(moodProvider.notifier).recordMood(
+          moodScore: score,
+          primaryEmotion: emotion,
         );
+        if (success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('已记录今日心情：$label')),
+          );
+        }
       },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
@@ -94,36 +103,20 @@ class PsychologyScreen extends ConsumerWidget {
         Expanded(
           child: _buildActionCard(
             context: context,
-            icon: Icons.edit_note,
-            label: '写日记',
-            color: Colors.blue,
-            onTap: () {
-              // TODO: Navigate to journal
-            },
-          ),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _buildActionCard(
-            context: context,
             icon: Icons.assessment,
             label: '心理评估',
             color: Colors.purple,
-            onTap: () {
-              _showAssessmentOptions(context);
-            },
+            onTap: () => _showAssessmentOptions(context),
           ),
         ),
         SizedBox(width: 12),
         Expanded(
           child: _buildActionCard(
             context: context,
-            icon: Icons.chat,
-            label: '心理聊天',
-            color: Colors.green,
-            onTap: () {
-              // TODO: Navigate to psychology chat
-            },
+            icon: Icons.psychology,
+            label: '心理档案',
+            color: Colors.blue,
+            onTap: () => context.push('/profile/psy-profile'),
           ),
         ),
       ],
@@ -217,35 +210,17 @@ class PsychologyScreen extends ConsumerWidget {
         backgroundColor: color.withOpacity(0.1),
         child: Icon(icon, color: color),
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      subtitle: Text(
-        description,
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
-      ),
+      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
+      subtitle: Text(description, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
       trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
       onTap: () {
         Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AssessmentScreen(scaleName: scaleName),
-          ),
-        );
+        context.push('/psychology/assessment/$scaleName');
       },
     );
   }
 
-  Widget _buildRecentMoods() {
+  Widget _buildRecentMoods(MoodState moodState) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -254,31 +229,49 @@ class PsychologyScreen extends ConsumerWidget {
           children: [
             Text(
               '最近心情',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
             SizedBox(height: 16),
-            Center(
-              child: Column(
-                children: [
-                  Icon(Icons.mood, size: 48, color: AppColors.textSecondary),
-                  SizedBox(height: 8),
-                  Text(
-                    '暂无记录',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            if (moodState.isLoading)
+              Center(child: CircularProgressIndicator())
+            else if (moodState.moods.isEmpty)
+              Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.mood, size: 48, color: AppColors.textSecondary),
+                    SizedBox(height: 8),
+                    Text('暂无记录', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                  ],
+                ),
+              )
+            else
+              ...moodState.moods.take(7).map((mood) => ListTile(
+                leading: Text(_getMoodEmoji(mood.moodScore), style: TextStyle(fontSize: 28)),
+                title: Text(_getMoodLabel(mood.moodScore)),
+                subtitle: Text(AppDateUtils.formatRelative(mood.createdAt ?? mood.recordDate)),
+                trailing: mood.primaryEmotion != null
+                    ? Chip(label: Text(mood.primaryEmotion!, style: TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact)
+                    : null,
+              )),
           ],
         ),
       ),
     );
+  }
+
+  String _getMoodEmoji(int score) {
+    if (score >= 8) return '😊';
+    if (score >= 6) return '😌';
+    if (score >= 4) return '😐';
+    if (score >= 2) return '😔';
+    return '😢';
+  }
+
+  String _getMoodLabel(int score) {
+    if (score >= 8) return '开心';
+    if (score >= 6) return '平静';
+    if (score >= 4) return '一般';
+    if (score >= 2) return '难过';
+    return '很差';
   }
 }

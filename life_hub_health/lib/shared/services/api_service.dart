@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/constants/app_constants.dart';
 import 'local_storage_service.dart';
 
@@ -51,21 +52,43 @@ class ApiService {
   }
 
   Interceptor _logInterceptor() {
+    if (!kDebugMode) return InterceptorsWrapper();
     return LogInterceptor(
       request: true,
       requestBody: true,
       responseBody: true,
       error: true,
       logPrint: (obj) {
-        // Redact sensitive data in production
         final message = obj.toString();
-        if (message.contains('Authorization') || message.contains('password')) {
-          print('[REDACTED]');
+        if (_containsSensitiveData(message)) {
+          print('[REDACTED - sensitive data detected]');
         } else {
           print(obj);
         }
       },
     );
+  }
+
+  bool _containsSensitiveData(String message) {
+    final lower = message.toLowerCase();
+    final sensitiveKeys = [
+      'authorization',
+      'password',
+      'token',
+      'refreshtoken',
+      'accesstoken',
+      'journaltext',
+      'journal_text',
+      'emotiontags',
+      'emotion_tags',
+      'moodscore',
+      'mood_score',
+      'content',
+      'systemprompt',
+      'system_prompt',
+      'useridforagent',
+    ];
+    return sensitiveKeys.any((key) => lower.contains(key));
   }
 
   Future<bool> _refreshToken() async {

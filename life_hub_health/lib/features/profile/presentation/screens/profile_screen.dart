@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import 'advice_records_screen.dart';
-import 'followup_plans_screen.dart';
-import 'checkin_screen.dart';
-import 'user_preferences_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -20,9 +17,7 @@ class ProfileScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.settings_outlined),
-            onPressed: () {
-              // TODO: Navigate to settings
-            },
+            onPressed: () => context.push('/profile/settings'),
           ),
         ],
       ),
@@ -95,13 +90,13 @@ class ProfileScreen extends ConsumerWidget {
           _buildMenuItem(
             icon: Icons.health_and_safety,
             label: '健康档案',
-            onTap: () {},
+            onTap: () => context.push('/profile/health-profile'),
           ),
           Divider(height: 1),
           _buildMenuItem(
             icon: Icons.psychology,
             label: '心理档案',
-            onTap: () {},
+            onTap: () => context.push('/profile/psy-profile'),
           ),
           Divider(height: 1),
           _buildMenuItem(
@@ -114,10 +109,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.auto_awesome,
             label: 'AI 建议',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AdviceRecordsScreen()),
-              );
+              context.push('/profile/advice-records');
             },
           ),
           Divider(height: 1),
@@ -125,10 +117,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.assignment,
             label: '跟踪计划',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => FollowupPlansScreen()),
-              );
+              context.push('/profile/followup-plans');
             },
           ),
           Divider(height: 1),
@@ -136,10 +125,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.checklist,
             label: '打卡记录',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CheckinScreen()),
-              );
+              context.push('/profile/checkin');
             },
           ),
           Divider(height: 1),
@@ -147,10 +133,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.psychology_alt,
             label: 'AI 偏好设置',
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => UserPreferencesScreen()),
-              );
+              context.push('/profile/preferences');
             },
           ),
           Divider(height: 1),

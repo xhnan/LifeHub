@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../core/utils/date_utils.dart';
 import '../providers/home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -65,7 +67,7 @@ class HomeScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '早上好！',
+                    '${AppDateUtils.getGreeting()}！',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -175,6 +177,7 @@ class HomeScreen extends ConsumerWidget {
             icon: Icons.restaurant,
             label: '记录饮食',
             color: Colors.orange,
+            onTap: () => context.push('/health-data/add-diet'),
           ),
         ),
         SizedBox(width: 12),
@@ -184,6 +187,7 @@ class HomeScreen extends ConsumerWidget {
             icon: Icons.fitness_center,
             label: '记录运动',
             color: Colors.blue,
+            onTap: () => context.push('/health-data/add-activity'),
           ),
         ),
         SizedBox(width: 12),
@@ -193,6 +197,7 @@ class HomeScreen extends ConsumerWidget {
             icon: Icons.monitor_weight,
             label: '记录体重',
             color: Colors.green,
+            onTap: () => context.push('/health-data/add-weight'),
           ),
         ),
       ],
@@ -204,12 +209,11 @@ class HomeScreen extends ConsumerWidget {
     required IconData icon,
     required String label,
     required Color color,
+    VoidCallback? onTap,
   }) {
     return Card(
       child: InkWell(
-        onTap: () {
-          // TODO: Navigate to add record
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: EdgeInsets.all(16),

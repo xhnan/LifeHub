@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/models/chat_message.dart';
 import '../../../../shared/providers/providers.dart';
+import '../../../../shared/services/sse_service.dart';
 
 final chatMessagesProvider = StateNotifierProvider<ChatMessagesNotifier, List<ChatMessage>>((ref) {
   final sseService = ref.read(sseServiceProvider);
@@ -11,7 +12,7 @@ final chatMessagesProvider = StateNotifierProvider<ChatMessagesNotifier, List<Ch
 });
 
 class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
-  final dynamic _sseService;
+  final SseService _sseService;
 
   ChatMessagesNotifier(this._sseService) : super([]);
 
@@ -84,7 +85,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
     _messageController.clear();
     ref.read(chatMessagesProvider.notifier).sendMessage(message);
-    _scrollToBottom();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   void _scrollToBottom() {
@@ -100,13 +103,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
-
-    // Auto-scroll when new messages arrive
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (messages.isNotEmpty) {
-        _scrollToBottom();
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(

@@ -3,7 +3,6 @@ import '../../../../shared/models/psy_assessment.dart';
 import '../../../../shared/providers/providers.dart';
 import '../../domain/repositories/psychology_repository.dart';
 import '../../data/repositories/psychology_repository.dart';
-import '../../data/datasources/assessment_datasource.dart';
 
 final psychologyRepositoryProvider = Provider<IPsychologyRepository>((ref) {
   final apiService = ref.read(apiServiceProvider);
@@ -14,6 +13,8 @@ final psyAssessmentProvider = StateNotifierProvider<PsyAssessmentNotifier, PsyAs
   final repository = ref.read(psychologyRepositoryProvider);
   return PsyAssessmentNotifier(repository);
 });
+
+const _sentinel = Object();
 
 class PsyAssessmentState {
   final bool isLoading;
@@ -31,13 +32,13 @@ class PsyAssessmentState {
   PsyAssessmentState copyWith({
     bool? isLoading,
     List<PsyAssessment>? assessments,
-    PsyAssessment? latestAssessment,
+    Object? latestAssessment = _sentinel,
     String? error,
   }) {
     return PsyAssessmentState(
       isLoading: isLoading ?? this.isLoading,
       assessments: assessments ?? this.assessments,
-      latestAssessment: latestAssessment ?? this.latestAssessment,
+      latestAssessment: latestAssessment == _sentinel ? this.latestAssessment : latestAssessment as PsyAssessment?,
       error: error,
     );
   }
@@ -94,28 +95,18 @@ class PsyAssessmentNotifier extends StateNotifier<PsyAssessmentState> {
   }
 
   List<AssessmentQuestion> getPHQ9Questions() {
-    return AssessmentDataSource.getPHQ9Questions();
+    return AssessmentScoring.getQuestions('PHQ-9');
   }
 
   List<AssessmentQuestion> getGAD7Questions() {
-    return AssessmentDataSource.getGAD7Questions();
+    return AssessmentScoring.getQuestions('GAD-7');
   }
 
   String getSeverity(String scaleName, int score) {
-    if (scaleName == 'PHQ-9') {
-      return AssessmentDataSource.getPHQ9Severity(score);
-    } else if (scaleName == 'GAD-7') {
-      return AssessmentDataSource.getGAD7Severity(score);
-    }
-    return '';
+    return AssessmentScoring.getSeverity(scaleName, score);
   }
 
   String getAnalysis(String scaleName, int score) {
-    if (scaleName == 'PHQ-9') {
-      return AssessmentDataSource.getPHQ9Analysis(score);
-    } else if (scaleName == 'GAD-7') {
-      return AssessmentDataSource.getGAD7Analysis(score);
-    }
-    return '';
+    return AssessmentScoring.getAnalysis(scaleName, score);
   }
 }
