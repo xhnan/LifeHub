@@ -1,9 +1,9 @@
 # AI 健康管理 App 设计文档
 
 **日期：** 2026-04-29
-**版本：** 2.0
+**版本：** 2.1
 **状态：** 设计完成，待实施
-**更新：** 基于后端代码分析，调整API契约和数据模型
+**更新：** 基于 v2.0 审阅反馈，补充 SSE 方案、API 错误格式、离线策略说明
 
 ---
 
@@ -41,6 +41,7 @@
 - **状态管理：** Riverpod
 - **路由：** GoRouter
 - **网络请求：** Dio
+- **SSE 客户端：** eventsource（用于 AI 聊天流式响应）
 - **本地存储：** Hive + flutter_secure_storage
 - **图表：** fl_chart
 
@@ -60,6 +61,22 @@
 - **云端存储** - PostgreSQL + pgvector (支持向量检索)
 - **本地缓存** - Hive 缓存常用数据，支持离线使用
 - **实时同步** - 数据变更立即同步到云端
+
+### 2.4 离线策略说明
+
+**MVP 阶段（暂不实现完整离线支持）：**
+- 本地仅做读取缓存，加速数据加载
+- 写入操作必须在线完成
+- 网络不可用时显示友好提示，引导用户稍后重试
+
+**后续版本规划：**
+- 离线优先策略：本地写入优先，后台同步
+- 冲突解决：基于时间戳的 Last-Write-Wins 策略
+- 同步队列：网络恢复后自动重试失败的写入操作
+
+**架构扩展性：**
+- Repository 模式已预留本地/远程数据源切换接口
+- 数据模型已支持 JSON 序列化，便于本地存储
 
 ---
 
@@ -387,9 +404,59 @@ CREATE TABLE health_risk_flags (
 
 ## 5. API 契约（基于后端实现）
 
+**API 范围说明：**
+- ✅ MVP：MVP 阶段必须实现
+- 🔜 后续版本：MVP 后逐步实现
+
+### 5.0 统一响应格式
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": { ... },
+  "success": true
+}
+```
+
+**错误响应：**
+```json
+{
+  "code": 400,
+  "message": "错误描述",
+  "data": null,
+  "success": false
+}
+```
+
+**错误码定义：**
+| HTTP 状态码 | code | 说明 | 前端处理 |
+|-------------|------|------|----------|
+| 400 | 400 | 请求参数错误 | 显示错误信息，提示用户修改 |
+| 401 | 401 | 未认证/Token 过期 | 尝试刷新 Token，失败则跳转登录 |
+| 403 | 403 | 无权限访问 | 显示无权限提示 |
+| 404 | 404 | 资源不存在 | 显示资源不存在提示 |
+| 500 | 500 | 服务器内部错误 | 显示通用错误提示，可重试 |
+
+**分页响应格式（如需要）：**
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [ ... ],
+    "total": 100,
+    "page": 1,
+    "pageSize": 20
+  },
+  "success": true
+}
+```
+
 ### 5.1 认证 API
 
-**登录**
+**登录** ✅ MVP
 ```dart
 POST /auth/login
 Request:
@@ -409,7 +476,7 @@ Response:
     success: true
 ```
 
-**微信登录**
+**微信登录** ✅ MVP
 ```dart
 POST /auth/wx-login
 Request:
@@ -422,7 +489,7 @@ Response:
       user: AuthUserProfile
 ```
 
-**获取用户信息**
+**获取用户信息** ✅ MVP
 ```dart
 GET /auth/profile
 Headers:
@@ -437,7 +504,7 @@ Response:
       avatar: string
 ```
 
-**刷新Token**
+**刷新Token** ✅ MVP
 ```dart
 POST /auth/refresh
 Request:
@@ -453,7 +520,7 @@ Response:
 
 ### 5.2 健康数据 API
 
-**用户健康档案**
+**用户健康档案** ✅ MVP
 ```dart
 // 获取我的健康档案
 GET /health/user-profiles/my
@@ -483,14 +550,14 @@ Response:
     data: true
 ```
 
-**每日活动汇总**
+**每日活动汇总** ✅ MVP
 ```dart
 // 获取我的每日汇总列表
 GET /health/daily-summaries/my
 Response:
   200:
     code: 200
-    data: [HealthyDailySummaries]
+    data: [DailySummary]
 
 // 根据日期查询
 GET /health/daily-summaries/date/{recordDate}
@@ -512,10 +579,10 @@ GET /health/daily-summaries/range?startDate=2026-01-01&endDate=2026-01-31
 Response:
   200:
     code: 200
-    data: [HealthyDailySummaries]
+    data: [DailySummary]
 ```
 
-**体重记录**
+**体重记录** ✅ MVP
 ```dart
 // 新增体重记录
 POST /health/weight-logs
@@ -534,7 +601,7 @@ GET /health/weight-logs/my
 Response:
   200:
     code: 200
-    data: [HealthyWeightLogs]
+    data: [WeightLog]
 
 // 获取最新体重记录
 GET /health/weight-logs/latest
@@ -554,10 +621,10 @@ GET /health/weight-logs/range?startDate=2026-01-01&endDate=2026-01-31
 Response:
   200:
     code: 200
-    data: [HealthyWeightLogs]
+    data: [WeightLog]
 ```
 
-**运动记录**
+**运动记录** ✅ MVP
 ```dart
 // 新增运动记录
 POST /health/activities
@@ -579,10 +646,10 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthyActivities]
+    data: [Activity]
 ```
 
-**饮食记录**
+**饮食记录** ✅ MVP
 ```dart
 // 新增饮食记录
 POST /health/diet-logs
@@ -606,17 +673,17 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthyDietLogs]
+    data: [DietLog]
 
 // 根据日期查询
 GET /health/diet-logs/date/{date}
 Response:
   200:
     code: 200
-    data: [HealthyDietLogs]
+    data: [DietLog]
 ```
 
-**健康目标**
+**健康目标** 🔜 后续版本
 ```dart
 // 新增健康目标
 POST /health/goals
@@ -638,12 +705,12 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthyGoals]
+    data: [HealthGoal]
 ```
 
 ### 5.3 AI 聊天 API
 
-**流式聊天**
+**流式聊天** ✅ MVP
 ```dart
 POST /health/chat/stream
 Request:
@@ -664,6 +731,76 @@ Response:
     data: {type: "complete", content: "", done: true, timestamp: long}
 ```
 
+**调用AI Agent** 🔜 后续版本
+```dart
+POST /health/chat/agent
+Request:
+  message: string (required)
+  historyLimit: int (default: 10)
+  useAgent: bool (default: true)
+Response:
+  200:
+    code: 200
+    data:
+      state: map // Agent执行状态
+      summary: map // 快速摘要
+      record_payload: map // 结构化记录数据
+```
+
+**SSE 前端实现方案（使用 eventsource 包）：**
+
+```dart
+import 'package:eventsource/eventsource.dart';
+
+class SseChatService {
+  Future<Stream<SSEEvent>> streamChat({
+    required String message,
+    int historyLimit = 10,
+    String? systemPrompt,
+    bool useAgent = true,
+  }) async {
+    final uri = Uri.parse('$baseUrl/health/chat/stream');
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+    final body = jsonEncode({
+      'message': message,
+      'historyLimit': historyLimit,
+      'systemPrompt': systemPrompt,
+      'useAgent': useAgent,
+    });
+
+    final eventSource = await EventSource.connect(
+      uri.toString(),
+      method: 'POST',
+      headers: headers,
+      body: body,
+    );
+
+    return eventSource.stream;
+  }
+}
+```
+
+**在 Provider 中使用：**
+```dart
+final chatStreamProvider = StreamProvider.family<ChatMessage, String>((ref, message) async* {
+  final sseService = ref.read(sseChatServiceProvider);
+  final stream = await sseService.streamChat(message: message);
+
+  await for (final event in stream) {
+    if (event.event == 'delta') {
+      final data = jsonDecode(event.data!);
+      yield ChatMessage(
+        content: data['content'],
+        isComplete: data['done'],
+      );
+    }
+  }
+});
+```
+
 **调用AI Agent**
 ```dart
 POST /health/chat/agent
@@ -682,7 +819,7 @@ Response:
 
 ### 5.4 心理健康 API
 
-**心理档案**
+**心理档案** ✅ MVP
 ```dart
 // 获取我的心理档案
 GET /health/psychology/profiles/my
@@ -708,7 +845,7 @@ Response:
     data: true
 ```
 
-**每日心情记录**
+**每日心情记录** ✅ MVP
 ```dart
 // 新增心情记录
 POST /health/psychology/daily-moods
@@ -727,7 +864,7 @@ GET /health/psychology/daily-moods/my
 Response:
   200:
     code: 200
-    data: [HealthPsyDailyMoods]
+    data: [DailyMood]
 
 // 获取最新心情记录
 GET /health/psychology/daily-moods/latest
@@ -747,10 +884,10 @@ GET /health/psychology/daily-moods/range?startDate=2026-01-01&endDate=2026-01-31
 Response:
   200:
     code: 200
-    data: [HealthPsyDailyMoods]
+    data: [DailyMood]
 ```
 
-**心理评估**
+**心理评估** 🔜 后续版本
 ```dart
 // 新增心理评估记录
 POST /health/psychology/assessments
@@ -771,17 +908,17 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthPsyAssessments]
+    data: [PsyAssessment]
 
 // 获取最新心理评估
 GET /health/psychology/assessments/latest
 Response:
   200:
     code: 200
-    data: HealthPsyAssessments
+    data: PsyAssessment
 ```
 
-**心理聊天记录**
+**心理聊天记录** ✅ MVP
 ```dart
 // 新增聊天记录
 POST /health/psychology/chat-memories
@@ -801,19 +938,19 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthPsyChatMemories]
+    data: [ChatMemory]
 
 // 获取最近聊天记录
 GET /health/psychology/chat-memories/recent?limit=10
 Response:
   200:
     code: 200
-    data: [HealthPsyChatMemories]
+    data: [ChatMemory]
 ```
 
 ### 5.5 AI Agent API
 
-**AI建议记录**
+**AI建议记录** 🔜 后续版本
 ```dart
 // 获取我的AI建议列表
 GET /health/agent/advice-records/my
@@ -823,10 +960,10 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthAgentAdviceRecords]
+    data: [AdviceRecord]
 ```
 
-**AI跟踪计划**
+**AI跟踪计划** 🔜 后续版本
 ```dart
 // 获取我的跟踪计划列表
 GET /health/agent/followup-plans/my
@@ -835,10 +972,10 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthAgentFollowupPlans]
+    data: [FollowupPlan]
 ```
 
-**AI打卡记录**
+**AI打卡记录** 🔜 后续版本
 ```dart
 // 新增打卡记录
 POST /health/agent/checkins
@@ -863,10 +1000,10 @@ Query:
 Response:
   200:
     code: 200
-    data: [HealthAgentCheckins]
+    data: [Checkin]
 ```
 
-**用户偏好**
+**用户偏好** 🔜 后续版本
 ```dart
 // 获取我的偏好设置
 GET /health/agent/user-preferences/my
@@ -904,10 +1041,17 @@ Response:
 
 ## 6. Flutter数据模型（匹配后端）
 
-### 6.1 用户健康档案
+### 6.1 命名规范
+
+- **类名使用单数形式**：`UserProfile` 而非 `HealthyUserProfiles`
+- **所有模型必须包含 `toJson()` 方法**：便于本地存储和 API 请求
+- **使用 json_serializable 生成序列化代码**：减少手写错误
+
+### 6.2 用户健康档案
 
 ```dart
-class HealthyUserProfiles {
+@JsonSerializable()
+class UserProfile {
   final int? id;
   final int userId;
   final DateTime? birthDate;
@@ -918,7 +1062,7 @@ class HealthyUserProfiles {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  HealthyUserProfiles({
+  UserProfile({
     this.id,
     required this.userId,
     this.birthDate,
@@ -930,38 +1074,16 @@ class HealthyUserProfiles {
     this.updatedAt,
   });
 
-  factory HealthyUserProfiles.fromJson(Map<String, dynamic> json) {
-    return HealthyUserProfiles(
-      id: json['id'],
-      userId: json['userId'],
-      birthDate: json['birthDate'] != null ? DateTime.parse(json['birthDate']) : null,
-      gender: json['gender'],
-      heightCm: json['heightCm']?.toDouble(),
-      baselineWeightKg: json['baselineWeightKg']?.toDouble(),
-      targetWeightKg: json['targetWeightKg']?.toDouble(),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'userId': userId,
-      'birthDate': birthDate?.toIso8601String(),
-      'gender': gender,
-      'heightCm': heightCm,
-      'baselineWeightKg': baselineWeightKg,
-      'targetWeightKg': targetWeightKg,
-    };
-  }
+  factory UserProfile.fromJson(Map<String, dynamic> json) => _$UserProfileFromJson(json);
+  Map<String, dynamic> toJson() => _$UserProfileToJson(this);
 }
 ```
 
-### 6.2 每日活动汇总
+### 6.3 每日活动汇总
 
 ```dart
-class HealthyDailySummaries {
+@JsonSerializable()
+class DailySummary {
   final int? id;
   final int userId;
   final DateTime recordDate;
@@ -973,7 +1095,7 @@ class HealthyDailySummaries {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  HealthyDailySummaries({
+  DailySummary({
     this.id,
     required this.userId,
     required this.recordDate,
@@ -986,27 +1108,16 @@ class HealthyDailySummaries {
     this.updatedAt,
   });
 
-  factory HealthyDailySummaries.fromJson(Map<String, dynamic> json) {
-    return HealthyDailySummaries(
-      id: json['id'],
-      userId: json['userId'],
-      recordDate: DateTime.parse(json['recordDate']),
-      totalSteps: json['totalSteps'] ?? 0,
-      activeCaloriesKcal: (json['activeCaloriesKcal'] ?? 0).toDouble(),
-      restingCaloriesKcal: (json['restingCaloriesKcal'] ?? 0).toDouble(),
-      totalDistanceMeters: (json['totalDistanceMeters'] ?? 0).toDouble(),
-      activeMinutes: json['activeMinutes'] ?? 0,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-    );
-  }
+  factory DailySummary.fromJson(Map<String, dynamic> json) => _$DailySummaryFromJson(json);
+  Map<String, dynamic> toJson() => _$DailySummaryToJson(this);
 }
 ```
 
-### 6.3 体重记录
+### 6.4 体重记录
 
 ```dart
-class HealthyWeightLogs {
+@JsonSerializable()
+class WeightLog {
   final int? id;
   final int userId;
   final DateTime recordDate;
@@ -1015,7 +1126,7 @@ class HealthyWeightLogs {
   final double? bmi;
   final DateTime? createdAt;
 
-  HealthyWeightLogs({
+  WeightLog({
     this.id,
     required this.userId,
     required this.recordDate,
@@ -1025,24 +1136,16 @@ class HealthyWeightLogs {
     this.createdAt,
   });
 
-  factory HealthyWeightLogs.fromJson(Map<String, dynamic> json) {
-    return HealthyWeightLogs(
-      id: json['id'],
-      userId: json['userId'],
-      recordDate: DateTime.parse(json['recordDate']),
-      weightKg: (json['weightKg'] ?? 0).toDouble(),
-      bodyFatPercentage: json['bodyFatPercentage']?.toDouble(),
-      bmi: json['bmi']?.toDouble(),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
+  factory WeightLog.fromJson(Map<String, dynamic> json) => _$WeightLogFromJson(json);
+  Map<String, dynamic> toJson() => _$WeightLogToJson(this);
 }
 ```
 
-### 6.4 运动记录
+### 6.5 运动记录
 
 ```dart
-class HealthyActivities {
+@JsonSerializable()
+class Activity {
   final int? id;
   final int userId;
   final String activityType;
@@ -1052,7 +1155,7 @@ class HealthyActivities {
   final String? description;
   final DateTime? createdAt;
 
-  HealthyActivities({
+  Activity({
     this.id,
     required this.userId,
     required this.activityType,
@@ -1063,25 +1166,16 @@ class HealthyActivities {
     this.createdAt,
   });
 
-  factory HealthyActivities.fromJson(Map<String, dynamic> json) {
-    return HealthyActivities(
-      id: json['id'],
-      userId: json['userId'],
-      activityType: json['activityType'],
-      startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
-      durationMinutes: json['durationMinutes'],
-      caloriesBurned: json['caloriesBurned']?.toDouble(),
-      description: json['description'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
+  factory Activity.fromJson(Map<String, dynamic> json) => _$ActivityFromJson(json);
+  Map<String, dynamic> toJson() => _$ActivityToJson(this);
 }
 ```
 
-### 6.5 饮食记录
+### 6.6 饮食记录
 
 ```dart
-class HealthyDietLogs {
+@JsonSerializable()
+class DietLog {
   final int? id;
   final int userId;
   final DateTime mealTime;
@@ -1093,7 +1187,7 @@ class HealthyDietLogs {
   final double? fatG;
   final DateTime? createdAt;
 
-  HealthyDietLogs({
+  DietLog({
     this.id,
     required this.userId,
     required this.mealTime,
@@ -1106,27 +1200,16 @@ class HealthyDietLogs {
     this.createdAt,
   });
 
-  factory HealthyDietLogs.fromJson(Map<String, dynamic> json) {
-    return HealthyDietLogs(
-      id: json['id'],
-      userId: json['userId'],
-      mealTime: DateTime.parse(json['mealTime']),
-      mealType: json['mealType'],
-      foodItems: json['foodItems'],
-      totalCalories: json['totalCalories']?.toDouble(),
-      proteinG: json['proteinG']?.toDouble(),
-      carbsG: json['carbsG']?.toDouble(),
-      fatG: json['fatG']?.toDouble(),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
+  factory DietLog.fromJson(Map<String, dynamic> json) => _$DietLogFromJson(json);
+  Map<String, dynamic> toJson() => _$DietLogToJson(this);
 }
 ```
 
-### 6.6 健康目标
+### 6.7 健康目标
 
 ```dart
-class HealthyGoals {
+@JsonSerializable()
+class HealthGoal {
   final int? id;
   final int userId;
   final String goalType;
@@ -1135,7 +1218,7 @@ class HealthyGoals {
   final String status;
   final DateTime? createdAt;
 
-  HealthyGoals({
+  HealthGoal({
     this.id,
     required this.userId,
     required this.goalType,
@@ -1145,24 +1228,16 @@ class HealthyGoals {
     this.createdAt,
   });
 
-  factory HealthyGoals.fromJson(Map<String, dynamic> json) {
-    return HealthyGoals(
-      id: json['id'],
-      userId: json['userId'],
-      goalType: json['goalType'],
-      targetValue: json['targetValue']?.toDouble(),
-      deadline: json['deadline'] != null ? DateTime.parse(json['deadline']) : null,
-      status: json['status'] ?? 'active',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
+  factory HealthGoal.fromJson(Map<String, dynamic> json) => _$HealthGoalFromJson(json);
+  Map<String, dynamic> toJson() => _$HealthGoalToJson(this);
 }
 ```
 
-### 6.7 心理健康模型
+### 6.8 心理健康模型
 
 ```dart
-class HealthPsyProfiles {
+@JsonSerializable()
+class PsyProfile {
   final int? id;
   final int userId;
   final String? mbtiType;
@@ -1171,7 +1246,7 @@ class HealthPsyProfiles {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  HealthPsyProfiles({
+  PsyProfile({
     this.id,
     required this.userId,
     this.mbtiType,
@@ -1181,20 +1256,12 @@ class HealthPsyProfiles {
     this.updatedAt,
   });
 
-  factory HealthPsyProfiles.fromJson(Map<String, dynamic> json) {
-    return HealthPsyProfiles(
-      id: json['id'],
-      userId: json['userId'],
-      mbtiType: json['mbtiType'],
-      enneagramType: json['enneagramType'],
-      baselineStressLevel: json['baselineStressLevel'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-    );
-  }
+  factory PsyProfile.fromJson(Map<String, dynamic> json) => _$PsyProfileFromJson(json);
+  Map<String, dynamic> toJson() => _$PsyProfileToJson(this);
 }
 
-class HealthPsyDailyMoods {
+@JsonSerializable()
+class DailyMood {
   final int? id;
   final int userId;
   final int moodScore;
@@ -1203,7 +1270,7 @@ class HealthPsyDailyMoods {
   final DateTime recordDate;
   final DateTime? createdAt;
 
-  HealthPsyDailyMoods({
+  DailyMood({
     this.id,
     required this.userId,
     required this.moodScore,
@@ -1213,20 +1280,12 @@ class HealthPsyDailyMoods {
     this.createdAt,
   });
 
-  factory HealthPsyDailyMoods.fromJson(Map<String, dynamic> json) {
-    return HealthPsyDailyMoods(
-      id: json['id'],
-      userId: json['userId'],
-      moodScore: json['moodScore'],
-      primaryEmotion: json['primaryEmotion'],
-      journalText: json['journalText'],
-      recordDate: DateTime.parse(json['recordDate']),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
+  factory DailyMood.fromJson(Map<String, dynamic> json) => _$DailyMoodFromJson(json);
+  Map<String, dynamic> toJson() => _$DailyMoodToJson(this);
 }
 
-class HealthPsyAssessments {
+@JsonSerializable()
+class PsyAssessment {
   final int? id;
   final int userId;
   final String scaleName;
@@ -1235,7 +1294,7 @@ class HealthPsyAssessments {
   final String? resultAnalysis;
   final DateTime? createdAt;
 
-  HealthPsyAssessments({
+  PsyAssessment({
     this.id,
     required this.userId,
     required this.scaleName,
@@ -1245,24 +1304,16 @@ class HealthPsyAssessments {
     this.createdAt,
   });
 
-  factory HealthPsyAssessments.fromJson(Map<String, dynamic> json) {
-    return HealthPsyAssessments(
-      id: json['id'],
-      userId: json['userId'],
-      scaleName: json['scaleName'],
-      totalScore: json['totalScore'],
-      severityLevel: json['severityLevel'],
-      resultAnalysis: json['resultAnalysis'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-    );
-  }
+  factory PsyAssessment.fromJson(Map<String, dynamic> json) => _$PsyAssessmentFromJson(json);
+  Map<String, dynamic> toJson() => _$PsyAssessmentToJson(this);
 }
 ```
 
-### 6.8 AI Agent模型
+### 6.9 AI Agent模型
 
 ```dart
-class HealthAgentAdviceRecords {
+@JsonSerializable()
+class AdviceRecord {
   final int? id;
   final int userId;
   final String agentType;
@@ -1276,7 +1327,7 @@ class HealthAgentAdviceRecords {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  HealthAgentAdviceRecords({
+  AdviceRecord({
     this.id,
     required this.userId,
     required this.agentType,
@@ -1291,25 +1342,12 @@ class HealthAgentAdviceRecords {
     this.updatedAt,
   });
 
-  factory HealthAgentAdviceRecords.fromJson(Map<String, dynamic> json) {
-    return HealthAgentAdviceRecords(
-      id: json['id'],
-      userId: json['userId'],
-      agentType: json['agentType'],
-      adviceType: json['adviceType'],
-      title: json['title'],
-      content: json['content'],
-      sourceSummary: json['sourceSummary'],
-      priorityLevel: json['priorityLevel'],
-      status: json['status'] ?? 'active',
-      validUntil: json['validUntil'] != null ? DateTime.parse(json['validUntil']) : null,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-    );
-  }
+  factory AdviceRecord.fromJson(Map<String, dynamic> json) => _$AdviceRecordFromJson(json);
+  Map<String, dynamic> toJson() => _$AdviceRecordToJson(this);
 }
 
-class HealthAgentCheckins {
+@JsonSerializable()
+class Checkin {
   final int? id;
   final int userId;
   final int? adviceRecordId;
@@ -1323,7 +1361,7 @@ class HealthAgentCheckins {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  HealthAgentCheckins({
+  Checkin({
     this.id,
     required this.userId,
     this.adviceRecordId,
@@ -1338,22 +1376,8 @@ class HealthAgentCheckins {
     this.updatedAt,
   });
 
-  factory HealthAgentCheckins.fromJson(Map<String, dynamic> json) {
-    return HealthAgentCheckins(
-      id: json['id'],
-      userId: json['userId'],
-      adviceRecordId: json['adviceRecordId'],
-      followupPlanId: json['followupPlanId'],
-      checkinDate: DateTime.parse(json['checkinDate']),
-      completionStatus: json['completionStatus'] ?? 'pending',
-      adherenceScore: json['adherenceScore'],
-      effectScore: json['effectScore'],
-      userFeedback: json['userFeedback'],
-      blockerReason: json['blockerReason'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-    );
-  }
+  factory Checkin.fromJson(Map<String, dynamic> json) => _$CheckinFromJson(json);
+  Map<String, dynamic> toJson() => _$CheckinToJson(this);
 }
 ```
 
@@ -1594,6 +1618,7 @@ dependencies:
   flutter_riverpod: ^2.4.9
   go_router: ^12.1.3
   dio: ^5.4.0
+  eventsource: ^1.0.0  # SSE 流式响应
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   flutter_secure_storage: ^9.0.0
@@ -1620,45 +1645,58 @@ dev_dependencies:
 **MVP 目标：** 验证核心价值主张 - 健康记录 + 仪表盘 + AI聊天
 
 **MVP 包含：**
-- ✅ 用户认证（JWT登录/微信登录）
+- ✅ 用户认证（JWT登录/微信登录/Token刷新）
 - ✅ 健康数据记录（运动、饮食、体重）
 - ✅ 首页仪表板（数据概览、图表）
-- ✅ AI聊天（流式响应）
-- ✅ 心理健康（心情记录）
-- ✅ 离线支持（本地缓存）
+- ✅ AI聊天（SSE 流式响应）
+- ✅ 心理健康（心情记录、心理档案）
+- ✅ 聊天记录存储
 
 **MVP 不包含：**
+- ❌ 健康目标管理
 - ❌ 心理评估（PHQ-9、GAD-7）
 - ❌ AI Agent建议记录
 - ❌ 跟踪计划
 - ❌ 打卡系统
 - ❌ 用户偏好管理
 - ❌ 向量检索功能
+- ❌ 离线支持（后续版本）
 
 ### 14.2 分阶段实施计划
 
 #### Phase 1: 基础架构 (Week 1-2)
-- [ ] Flutter 项目初始化
-- [ ] 核心服务实现（API、本地存储）
-- [ ] 认证模块（JWT登录、微信登录）
-- [ ] 基础 UI 组件
+- [ ] Flutter 项目初始化（flutter create + 目录结构）
+- [ ] 核心依赖配置（pubspec.yaml）
+- [ ] 主题系统（AppColors、AppTheme）
+- [ ] 路由配置（GoRouter + 底部导航）
+- [ ] API 服务层（Dio + 拦截器 + Token 管理）
+- [ ] 本地存储服务（flutter_secure_storage + Hive）
+- [ ] 认证模块（登录页 + JWT 认证流程）
+- [ ] 通用 UI 组件（LoadingWidget、ErrorWidget）
 
 #### Phase 2: 核心功能 (Week 3-4)
-- [ ] 首页仪表板
-- [ ] 健康数据模块（运动、饮食、体重）
-- [ ] 每日活动汇总
+- [ ] 首页仪表板（数据概览卡片、AI 建议卡片）
+- [ ] 健康数据模块 - 体重记录（列表 + 图表 + 新增）
+- [ ] 健康数据模块 - 运动记录（列表 + 新增）
+- [ ] 健康数据模块 - 饮食记录（列表 + 新增）
+- [ ] 每日活动汇总展示
+- [ ] fl_chart 图表集成（体重趋势、运动统计）
 
 #### Phase 3: AI 功能 (Week 5-6)
-- [ ] AI聊天模块（流式响应）
-- [ ] 心理健康模块（心情记录）
-- [ ] 离线支持
+- [ ] SSE 服务封装（eventsource 集成）
+- [ ] AI 聊天界面（消息列表 + 输入框）
+- [ ] 流式响应实时渲染
+- [ ] 心理健康模块 - 心情记录（日历视图 + 新增）
+- [ ] 心理健康模块 - 心理档案管理
+- [ ] 聊天记录本地存储
 
 #### Phase 4: 扩展功能 (Week 7-10)
-- [ ] 心理评估
-- [ ] AI Agent建议记录
-- [ ] 跟踪计划
+- [ ] 心理评估（PHQ-9、GAD-7 量表）
+- [ ] AI Agent 建议记录展示
+- [ ] 跟踪计划管理
 - [ ] 打卡系统
-- [ ] 用户偏好管理
+- [ ] 用户偏好设置
+- [ ] 数据统计与分析
 
 ---
 
