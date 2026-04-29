@@ -15,7 +15,6 @@ ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => ChatMessage(
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
-      isStreaming: json['isStreaming'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) =>
@@ -26,5 +25,4 @@ Map<String, dynamic> _$ChatMessageToJson(ChatMessage instance) =>
       'content': instance.content,
       'emotionTags': instance.emotionTags,
       'createdAt': instance.createdAt?.toIso8601String(),
-      'isStreaming': instance.isStreaming,
     };

@@ -4,15 +4,34 @@ import '../../core/constants/app_constants.dart';
 
 class LocalStorageService {
   final FlutterSecureStorage _secureStorage;
-  late Box _cacheBox;
-  late Box _settingsBox;
+  Box? _cacheBox;
+  Box? _settingsBox;
+  bool _initialized = false;
 
   LocalStorageService() : _secureStorage = FlutterSecureStorage();
 
+  bool get isInitialized => _initialized;
+
   Future<void> init() async {
+    if (_initialized) return;
     await Hive.initFlutter();
     _cacheBox = await Hive.openBox(AppConstants.cacheBox);
     _settingsBox = await Hive.openBox(AppConstants.settingsBox);
+    _initialized = true;
+  }
+
+  Box get cacheBox {
+    if (_cacheBox == null) {
+      throw StateError('LocalStorageService not initialized. Call init() first.');
+    }
+    return _cacheBox!;
+  }
+
+  Box get settingsBox {
+    if (_settingsBox == null) {
+      throw StateError('LocalStorageService not initialized. Call init() first.');
+    }
+    return _settingsBox!;
   }
 
   // Token management
@@ -39,32 +58,32 @@ class LocalStorageService {
 
   // Cache management
   Future<void> saveToCache(String key, dynamic value) async {
-    await _cacheBox.put(key, value);
+    await cacheBox.put(key, value);
   }
 
   dynamic getFromCache(String key) {
-    return _cacheBox.get(key);
+    return cacheBox.get(key);
   }
 
   Future<void> removeFromCache(String key) async {
-    await _cacheBox.delete(key);
+    await cacheBox.delete(key);
   }
 
   Future<void> clearCache() async {
-    await _cacheBox.clear();
+    await cacheBox.clear();
   }
 
   // Settings management
   Future<void> saveSetting(String key, dynamic value) async {
-    await _settingsBox.put(key, value);
+    await settingsBox.put(key, value);
   }
 
   dynamic getSetting(String key, {dynamic defaultValue}) {
-    return _settingsBox.get(key, defaultValue: defaultValue);
+    return settingsBox.get(key, defaultValue: defaultValue);
   }
 
   Future<void> clearSettings() async {
-    await _settingsBox.clear();
+    await settingsBox.clear();
   }
 
   // Clear all data

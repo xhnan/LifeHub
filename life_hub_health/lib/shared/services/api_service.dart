@@ -5,6 +5,7 @@ import 'local_storage_service.dart';
 class ApiService {
   final Dio _dio;
   final LocalStorageService _localStorageService;
+  bool _isRefreshing = false;
 
   ApiService(this._localStorageService) : _dio = Dio() {
     _dio.options.baseUrl = AppConstants.baseUrl;
@@ -29,14 +30,19 @@ class ApiService {
         handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
-          final refreshed = await _refreshToken();
-          if (refreshed) {
-            final token = await _localStorageService.getToken();
-            error.requestOptions.headers['Authorization'] = 'Bearer $token';
-            final response = await _dio.fetch(error.requestOptions);
-            handler.resolve(response);
-            return;
+        if (error.response?.statusCode == 401 && !_isRefreshing) {
+          _isRefreshing = true;
+          try {
+            final refreshed = await _refreshToken();
+            if (refreshed) {
+              final token = await _localStorageService.getToken();
+              error.requestOptions.headers['Authorization'] = 'Bearer $token';
+              final response = await _dio.fetch(error.requestOptions);
+              handler.resolve(response);
+              return;
+            }
+          } finally {
+            _isRefreshing = false;
           }
         }
         handler.next(error);
@@ -50,6 +56,15 @@ class ApiService {
       requestBody: true,
       responseBody: true,
       error: true,
+      logPrint: (obj) {
+        // Redact sensitive data in production
+        final message = obj.toString();
+        if (message.contains('Authorization') || message.contains('password')) {
+          print('[REDACTED]');
+        } else {
+          print(obj);
+        }
+      },
     );
   }
 

@@ -1,6 +1,64 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../shared/models/chat_message.dart';
+import '../../../../shared/providers/providers.dart';
+
+final chatMessagesProvider = StateNotifierProvider<ChatMessagesNotifier, List<ChatMessage>>((ref) {
+  final sseService = ref.read(sseServiceProvider);
+  return ChatMessagesNotifier(sseService);
+});
+
+class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
+  final dynamic _sseService;
+
+  ChatMessagesNotifier(this._sseService) : super([]);
+
+  Future<void> sendMessage(String content) async {
+    // Add user message
+    state = [...state, ChatMessage(role: 'user', content: content)];
+
+    // Add streaming placeholder
+    state = [...state, ChatMessage(role: 'assistant', content: '', isStreaming: true)];
+
+    try {
+      final stream = await _sseService.streamChat(message: content);
+
+      await for (final event in stream) {
+        if (event.data != null) {
+          final data = jsonDecode(event.data!);
+          final eventType = data['type'] as String?;
+
+          if (eventType == 'delta') {
+            final chunk = data['content'] as String? ?? '';
+            final lastMessage = state.last;
+            final updatedMessage = lastMessage.copyWith(
+              content: lastMessage.content + chunk,
+            );
+            state = [...state.sublist(0, state.length - 1), updatedMessage];
+          } else if (eventType == 'complete') {
+            final lastMessage = state.last;
+            final updatedMessage = lastMessage.copyWith(isStreaming: false);
+            state = [...state.sublist(0, state.length - 1), updatedMessage];
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      final lastMessage = state.last;
+      final updatedMessage = lastMessage.copyWith(
+        content: '抱歉，发生了错误：${e.toString()}',
+        isStreaming: false,
+      );
+      state = [...state.sublist(0, state.length - 1), updatedMessage];
+    }
+  }
+
+  void clearMessages() {
+    state = [];
+  }
+}
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -12,7 +70,6 @@ class AiChatScreen extends ConsumerStatefulWidget {
 class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
 
   @override
   void dispose() {
@@ -25,28 +82,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
 
-    setState(() {
-      _messages.add(ChatMessage(
-        content: message,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
-    });
-
     _messageController.clear();
+    ref.read(chatMessagesProvider.notifier).sendMessage(message);
     _scrollToBottom();
-
-    // TODO: Implement SSE streaming
-    Future.delayed(Duration(seconds: 1), () {
-      setState(() {
-        _messages.add(ChatMessage(
-          content: '这是 AI 的回复（待实现）',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
-      });
-      _scrollToBottom();
-    });
   }
 
   void _scrollToBottom() {
@@ -61,6 +99,15 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final messages = ref.watch(chatMessagesProvider);
+
+    // Auto-scroll when new messages arrive
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (messages.isNotEmpty) {
+        _scrollToBottom();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text('AI 助手'),
@@ -68,9 +115,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           IconButton(
             icon: Icon(Icons.delete_outline),
             onPressed: () {
-              setState(() {
-                _messages.clear();
-              });
+              ref.read(chatMessagesProvider.notifier).clearMessages();
             },
           ),
         ],
@@ -78,9 +123,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _messages.isEmpty
+            child: messages.isEmpty
                 ? _buildEmptyState()
-                : _buildMessageList(),
+                : _buildMessageList(messages),
           ),
           _buildInputArea(),
         ],
@@ -120,13 +165,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
-  Widget _buildMessageList() {
+  Widget _buildMessageList(List<ChatMessage> messages) {
     return ListView.builder(
       controller: _scrollController,
       padding: EdgeInsets.all(16),
-      itemCount: _messages.length,
+      itemCount: messages.length,
       itemBuilder: (context, index) {
-        final message = _messages[index];
+        final message = messages[index];
         return _buildMessageBubble(message);
       },
     );
@@ -134,17 +179,17 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: message.role == 'user' ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.only(
           top: 8,
           bottom: 8,
-          left: message.isUser ? 64 : 0,
-          right: message.isUser ? 0 : 64,
+          left: message.role == 'user' ? 64 : 0,
+          right: message.role == 'user' ? 0 : 64,
         ),
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: message.isUser ? AppColors.primary : AppColors.surface,
+          color: message.role == 'user' ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -154,13 +199,35 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             ),
           ],
         ),
-        child: Text(
-          message.content,
-          style: TextStyle(
-            color: message.isUser ? Colors.white : AppColors.textPrimary,
-            fontSize: 14,
-          ),
-        ),
+        child: message.isStreaming
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    '思考中...',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                message.content,
+                style: TextStyle(
+                  color: message.role == 'user' ? Colors.white : AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
       ),
     );
   }
@@ -210,16 +277,4 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       ),
     );
   }
-}
-
-class ChatMessage {
-  final String content;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.content,
-    required this.isUser,
-    required this.timestamp,
-  });
 }

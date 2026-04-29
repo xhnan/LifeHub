@@ -1,6 +1,7 @@
 class AppConstants {
   static const String appName = 'LifeHub Health';
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = 'https://api.lifehub.com';
+  static const String apiVersion = '/api/v1';
   
   // Storage keys
   static const String tokenKey = 'auth_token';

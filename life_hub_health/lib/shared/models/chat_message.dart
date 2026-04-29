@@ -10,6 +10,7 @@ class ChatMessage {
   final String content;
   final String? emotionTags;
   final DateTime? createdAt;
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final bool isStreaming;
 
   ChatMessage({

@@ -16,6 +16,10 @@ class SseService {
     bool useAgent = true,
   }) async {
     final token = await _localStorageService.getToken();
+    if (token == null) {
+      throw Exception('未登录，请先登录');
+    }
+
     final uri = Uri.parse('${AppConstants.baseUrl}/health/chat/stream');
     
     final headers = {
@@ -31,13 +35,17 @@ class SseService {
       'useAgent': useAgent,
     });
 
-    final eventSource = await EventSource.connect(
-      uri.toString(),
-      headers: headers,
-      body: body,
-      method: 'POST',
-    );
+    try {
+      final eventSource = await EventSource.connect(
+        uri.toString(),
+        headers: headers,
+        body: body,
+        method: 'POST',
+      );
 
-    return eventSource;
+      return eventSource;
+    } catch (e) {
+      throw Exception('连接 AI 服务失败: $e');
+    }
   }
 }

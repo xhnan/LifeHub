@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/health_data/presentation/screens/health_data_screen.dart';
@@ -7,40 +9,56 @@ import '../features/ai_chat/presentation/screens/ai_chat_screen.dart';
 import '../features/psychology/presentation/screens/psychology_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 
-final goRouter = GoRouter(
-  initialLocation: '/login',
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => LoginScreen(),
-    ),
-    ShellRoute(
-      builder: (context, state, child) => MainShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => HomeScreen(),
-        ),
-        GoRoute(
-          path: '/health-data',
-          builder: (context, state) => HealthDataScreen(),
-        ),
-        GoRoute(
-          path: '/ai-chat',
-          builder: (context, state) => AiChatScreen(),
-        ),
-        GoRoute(
-          path: '/psychology',
-          builder: (context, state) => PsychologyScreen(),
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) => ProfileScreen(),
-        ),
-      ],
-    ),
-  ],
-);
+final goRouterProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
+  return GoRouter(
+    initialLocation: '/login',
+    redirect: (context, state) {
+      final isLoggedIn = authState.isAuthenticated;
+      final isLoginRoute = state.uri.path == '/login';
+
+      if (!isLoggedIn && !isLoginRoute) {
+        return '/login';
+      }
+      if (isLoggedIn && isLoginRoute) {
+        return '/home';
+      }
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => LoginScreen(),
+      ),
+      ShellRoute(
+        builder: (context, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => HomeScreen(),
+          ),
+          GoRoute(
+            path: '/health-data',
+            builder: (context, state) => HealthDataScreen(),
+          ),
+          GoRoute(
+            path: '/ai-chat',
+            builder: (context, state) => AiChatScreen(),
+          ),
+          GoRoute(
+            path: '/psychology',
+            builder: (context, state) => PsychologyScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => ProfileScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
+});
 
 class MainShell extends StatelessWidget {
   final Widget child;

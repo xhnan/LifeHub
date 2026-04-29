@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/colors.dart';
+import '../providers/home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final homeState = ref.watch(homeProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('首页'),
@@ -19,19 +22,23 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWelcomeCard(),
-            SizedBox(height: 16),
-            _buildTodaySummary(),
-            SizedBox(height: 16),
-            _buildQuickActions(),
-            SizedBox(height: 16),
-            _buildAiAdviceCard(),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(homeProvider.notifier).loadDashboard(),
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildWelcomeCard(),
+              SizedBox(height: 16),
+              _buildTodaySummary(homeState),
+              SizedBox(height: 16),
+              _buildQuickActions(context),
+              SizedBox(height: 16),
+              _buildAiAdviceCard(),
+            ],
+          ),
         ),
       ),
     );
@@ -82,7 +89,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTodaySummary() {
+  Widget _buildTodaySummary(HomeState homeState) {
+    final summary = homeState.todaySummary;
+    final weight = homeState.latestWeight;
+
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -98,15 +108,33 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildSummaryItem(Icons.directions_walk, '步数', '0'),
-                _buildSummaryItem(Icons.local_fire_department, '卡路里', '0 kcal'),
-                _buildSummaryItem(Icons.timer, '活动', '0 分钟'),
-                _buildSummaryItem(Icons.water_drop, '体重', '-- kg'),
-              ],
-            ),
+            homeState.isLoading
+                ? Center(child: CircularProgressIndicator())
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildSummaryItem(
+                        Icons.directions_walk,
+                        '步数',
+                        '${summary?.totalSteps ?? 0}',
+                      ),
+                      _buildSummaryItem(
+                        Icons.local_fire_department,
+                        '卡路里',
+                        '${summary?.activeCaloriesKcal ?? 0} kcal',
+                      ),
+                      _buildSummaryItem(
+                        Icons.timer,
+                        '活动',
+                        '${summary?.activeMinutes ?? 0} 分钟',
+                      ),
+                      _buildSummaryItem(
+                        Icons.water_drop,
+                        '体重',
+                        weight != null ? '${weight.weightKg} kg' : '-- kg',
+                      ),
+                    ],
+                  ),
           ],
         ),
       ),
@@ -138,11 +166,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _buildActionCard(
+            context: context,
             icon: Icons.restaurant,
             label: '记录饮食',
             color: Colors.orange,
@@ -151,6 +180,7 @@ class HomeScreen extends ConsumerWidget {
         SizedBox(width: 12),
         Expanded(
           child: _buildActionCard(
+            context: context,
             icon: Icons.fitness_center,
             label: '记录运动',
             color: Colors.blue,
@@ -159,6 +189,7 @@ class HomeScreen extends ConsumerWidget {
         SizedBox(width: 12),
         Expanded(
           child: _buildActionCard(
+            context: context,
             icon: Icons.monitor_weight,
             label: '记录体重',
             color: Colors.green,
@@ -169,6 +200,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildActionCard({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required Color color,
