@@ -79,6 +79,11 @@ class _UserPreferencesScreenState extends ConsumerState<UserPreferencesScreen> {
           SnackBar(content: Text('偏好设置已保存')),
         );
         Navigator.pop(context);
+      } else if (mounted) {
+        final error = ref.read(userPreferencesProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error ?? '保存失败')),
+        );
       }
     }
   }

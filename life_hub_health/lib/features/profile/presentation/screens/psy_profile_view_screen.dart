@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/providers/providers.dart';
 import '../../../psychology/domain/repositories/psychology_repository.dart';
@@ -13,18 +14,60 @@ final _psyProfileProvider = FutureProvider.autoDispose((ref) async {
   return ref.read(_psyRepoProvider).getMyProfile();
 });
 
-class PsyProfileViewScreen extends ConsumerWidget {
+class PsyProfileViewScreen extends ConsumerStatefulWidget {
   const PsyProfileViewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PsyProfileViewScreen> createState() => _PsyProfileViewScreenState();
+}
+
+class _PsyProfileViewScreenState extends ConsumerState<PsyProfileViewScreen> {
+  bool _isInitializing = false;
+
+  Future<void> _handleInit() async {
+    setState(() => _isInitializing = true);
+    try {
+      final success = await ref.read(_psyRepoProvider).initProfile();
+      if (success && mounted) {
+        ref.invalidate(_psyProfileProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ErrorHandler.getFriendlyMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isInitializing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profileAsync = ref.watch(_psyProfileProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text('心理档案')),
       body: profileAsync.when(
         loading: () => Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('加载失败: $e')),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              SizedBox(height: 16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32),
+                child: Text(ErrorHandler.getFriendlyMessage(e), style: TextStyle(color: AppColors.error), textAlign: TextAlign.center),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(_psyProfileProvider),
+                child: Text('重试'),
+              ),
+            ],
+          ),
+        ),
         data: (profile) {
           if (profile == null) {
             return Center(
@@ -36,8 +79,10 @@ class PsyProfileViewScreen extends ConsumerWidget {
                   Text('暂未初始化心理档案', style: TextStyle(color: AppColors.textSecondary)),
                   SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () {},
-                    child: Text('立即初始化'),
+                    onPressed: _isInitializing ? null : _handleInit,
+                    child: _isInitializing
+                        ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text('立即初始化'),
                   ),
                 ],
               ),

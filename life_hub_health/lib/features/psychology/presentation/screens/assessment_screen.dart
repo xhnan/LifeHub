@@ -152,6 +152,10 @@ class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
           ],
         ),
       );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ref.read(psyAssessmentProvider).error ?? '提交评估失败')),
+      );
     }
   }
 
@@ -221,6 +225,10 @@ class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
             ),
           ],
         ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ref.read(psyAssessmentProvider).error ?? '提交评估失败')),
       );
     }
   }

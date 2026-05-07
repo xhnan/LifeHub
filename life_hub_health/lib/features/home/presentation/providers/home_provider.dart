@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../shared/models/daily_summary.dart';
 import '../../../../shared/models/weight_log.dart';
 import '../../../../shared/providers/providers.dart';
@@ -65,7 +66,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: ErrorHandler.getFriendlyMessage(e),
       );
     }
   }

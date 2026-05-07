@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../shared/models/health_activity.dart';
 import '../../../../shared/models/diet_log.dart';
 import '../../../../shared/models/weight_log.dart';
@@ -25,6 +26,7 @@ class HealthDataState {
   final List<DietLog> dietLogs;
   final List<WeightLog> weightLogs;
   final DailySummary? todaySummary;
+  final List<DailySummary> summaryHistory;
   final String? error;
 
   HealthDataState({
@@ -33,6 +35,7 @@ class HealthDataState {
     this.dietLogs = const [],
     this.weightLogs = const [],
     this.todaySummary,
+    this.summaryHistory = const [],
     this.error,
   });
 
@@ -42,6 +45,7 @@ class HealthDataState {
     List<DietLog>? dietLogs,
     List<WeightLog>? weightLogs,
     Object? todaySummary = _sentinel,
+    List<DailySummary>? summaryHistory,
     String? error,
   }) {
     return HealthDataState(
@@ -50,6 +54,7 @@ class HealthDataState {
       dietLogs: dietLogs ?? this.dietLogs,
       weightLogs: weightLogs ?? this.weightLogs,
       todaySummary: todaySummary == _sentinel ? this.todaySummary : todaySummary as DailySummary?,
+      summaryHistory: summaryHistory ?? this.summaryHistory,
       error: error,
     );
   }
@@ -63,11 +68,14 @@ class HealthDataNotifier extends StateNotifier<HealthDataState> {
   Future<void> loadAll() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      final now = DateTime.now();
+      final sevenDaysAgo = now.subtract(Duration(days: 6));
       final results = await Future.wait([
         _repository.getActivities(),
         _repository.getDietLogs(),
         _repository.getWeightLogs(),
-        _repository.getDailySummary(DateTime.now()),
+        _repository.getDailySummary(now),
+        _repository.getDailySummariesByRange(sevenDaysAgo, now),
       ]);
       state = state.copyWith(
         isLoading: false,
@@ -75,9 +83,10 @@ class HealthDataNotifier extends StateNotifier<HealthDataState> {
         dietLogs: results[1] as List<DietLog>,
         weightLogs: results[2] as List<WeightLog>,
         todaySummary: results[3] as DailySummary?,
+        summaryHistory: results[4] as List<DailySummary>,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
     }
   }
 
@@ -98,7 +107,7 @@ class HealthDataNotifier extends StateNotifier<HealthDataState> {
       await loadAll();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
       return false;
     }
   }
@@ -126,7 +135,7 @@ class HealthDataNotifier extends StateNotifier<HealthDataState> {
       await loadAll();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
       return false;
     }
   }
@@ -147,7 +156,7 @@ class HealthDataNotifier extends StateNotifier<HealthDataState> {
       await loadAll();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
       return false;
     }
   }

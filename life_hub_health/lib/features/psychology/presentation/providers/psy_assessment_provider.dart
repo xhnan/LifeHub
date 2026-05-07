@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../shared/models/psy_assessment.dart';
 import '../../../../shared/providers/providers.dart';
 import '../../domain/repositories/psychology_repository.dart';
@@ -64,7 +65,7 @@ class PsyAssessmentNotifier extends StateNotifier<PsyAssessmentState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: ErrorHandler.getFriendlyMessage(e),
       );
     }
   }
@@ -88,7 +89,7 @@ class PsyAssessmentNotifier extends StateNotifier<PsyAssessmentState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: ErrorHandler.getFriendlyMessage(e),
       );
       return false;
     }

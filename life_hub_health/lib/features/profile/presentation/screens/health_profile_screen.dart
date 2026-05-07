@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/models/user_profile.dart';
 import '../../../../shared/providers/providers.dart';
@@ -43,7 +44,7 @@ class _HealthProfileScreenState extends ConsumerState<HealthProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存失败: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ErrorHandler.getFriendlyMessage(e))));
       }
     } finally {
       setState(() => _isLoading = false);

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../shared/models/agent_models.dart';
 import '../../../../shared/models/user_preferences.dart';
 import '../../../../shared/providers/providers.dart';
@@ -70,7 +71,7 @@ class AdviceRecordsNotifier extends StateNotifier<AdviceRecordsState> {
       );
       state = state.copyWith(isLoading: false, records: records);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
     }
   }
 }
@@ -111,7 +112,7 @@ class FollowupPlansNotifier extends StateNotifier<FollowupPlansState> {
       final plans = await _repository.getMyFollowupPlans(activeOnly: activeOnly);
       state = state.copyWith(isLoading: false, plans: plans);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
     }
   }
 }
@@ -152,7 +153,7 @@ class CheckinsNotifier extends StateNotifier<CheckinsState> {
       final checkins = await _repository.getMyCheckins(followupPlanId: followupPlanId);
       state = state.copyWith(isLoading: false, checkins: checkins);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
     }
   }
 
@@ -181,7 +182,7 @@ class CheckinsNotifier extends StateNotifier<CheckinsState> {
       await loadCheckins(followupPlanId: followupPlanId);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
       return false;
     }
   }
@@ -227,7 +228,7 @@ class UserPreferencesNotifier extends StateNotifier<UserPreferencesState> {
       final preferences = await _repository.getMyPreferences();
       state = state.copyWith(isLoading: false, preferences: preferences);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
     }
   }
 
@@ -254,7 +255,7 @@ class UserPreferencesNotifier extends StateNotifier<UserPreferencesState> {
       await loadPreferences();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
       return false;
     }
   }

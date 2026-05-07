@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../shared/models/auth_user.dart';
 import '../../../../shared/services/local_storage_service.dart';
 import '../../../../shared/providers/providers.dart';
@@ -50,20 +51,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final IAuthRepository _authRepository;
   final LocalStorageService _localStorageService;
 
-  AuthNotifier(this._authRepository, this._localStorageService) : super(AuthState()) {
+  AuthNotifier(this._authRepository, this._localStorageService) : super(AuthState(isLoading: true)) {
     _checkAuthStatus();
   }
 
   Future<void> _checkAuthStatus() async {
-    final token = await _localStorageService.getToken();
-    if (token != null) {
-      try {
+    try {
+      final token = await _localStorageService.getToken();
+      if (token != null) {
         final user = await _authRepository.getProfile();
-        state = state.copyWith(user: user, isAuthenticated: true);
-      } catch (e) {
-        await _localStorageService.clearTokens();
-        state = state.copyWith(isAuthenticated: false);
+        state = state.copyWith(user: user, isAuthenticated: true, isLoading: false);
+      } else {
+        state = state.copyWith(isLoading: false);
       }
+    } catch (e) {
+      await _localStorageService.clearTokens();
+      state = state.copyWith(isAuthenticated: false, isLoading: false);
     }
   }
 
@@ -84,7 +87,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: ErrorHandler.getFriendlyMessage(e),
       );
       return false;
     }

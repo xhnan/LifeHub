@@ -75,6 +75,11 @@ class PsychologyScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('已记录今日心情：$label')),
           );
+        } else if (context.mounted) {
+          final error = ref.read(moodProvider).error;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error ?? '记录心情失败')),
+          );
         }
       },
       borderRadius: BorderRadius.circular(12),

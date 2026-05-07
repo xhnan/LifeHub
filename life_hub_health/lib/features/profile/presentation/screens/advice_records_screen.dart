@@ -47,9 +47,29 @@ class _AdviceRecordsScreenState extends ConsumerState<AdviceRecordsScreen> {
       ),
       body: state.isLoading
           ? Center(child: CircularProgressIndicator())
-          : state.records.isEmpty
-              ? _buildEmptyState()
-              : _buildAdviceList(state.records),
+          : state.error != null && state.records.isEmpty
+              ? _buildErrorState(state.error!, () => ref.read(adviceRecordsProvider.notifier).loadRecords(activeOnly: true))
+              : state.records.isEmpty
+                  ? _buildEmptyState()
+                  : _buildAdviceList(state.records),
+    );
+  }
+
+  Widget _buildErrorState(String error, VoidCallback onRetry) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: AppColors.error),
+          SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(error, style: TextStyle(fontSize: 14, color: AppColors.error), textAlign: TextAlign.center),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(onPressed: onRetry, child: Text('重试')),
+        ],
+      ),
     );
   }
 

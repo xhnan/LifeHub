@@ -29,7 +29,14 @@ class _AddWeightScreenState extends ConsumerState<AddWeightScreen> {
       weightKg: double.parse(_weightController.text),
       bodyFatPercentage: _bodyFatController.text.isNotEmpty ? double.parse(_bodyFatController.text) : null,
     );
-    if (success && mounted) context.pop();
+    if (success && mounted) {
+      context.pop();
+    } else if (mounted) {
+      final error = ref.read(healthDataProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error ?? '添加体重记录失败')),
+      );
+    }
   }
 
   @override

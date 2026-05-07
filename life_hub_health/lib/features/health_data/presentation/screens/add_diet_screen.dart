@@ -41,7 +41,14 @@ class _AddDietScreenState extends ConsumerState<AddDietScreen> {
       carbsG: _carbsController.text.isNotEmpty ? double.parse(_carbsController.text) : null,
       fatG: _fatController.text.isNotEmpty ? double.parse(_fatController.text) : null,
     );
-    if (success && mounted) context.pop();
+    if (success && mounted) {
+      context.pop();
+    } else if (mounted) {
+      final error = ref.read(healthDataProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error ?? '添加饮食记录失败')),
+      );
+    }
   }
 
   @override

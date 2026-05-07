@@ -34,7 +34,31 @@ class HomeScreen extends ConsumerWidget {
             children: [
               _buildWelcomeCard(),
               SizedBox(height: 16),
-              _buildTodaySummary(homeState),
+              if (homeState.error != null)
+                Card(
+                  color: AppColors.error.withOpacity(0.1),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: AppColors.error),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            homeState.error!,
+                            style: TextStyle(color: AppColors.error, fontSize: 14),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => ref.read(homeProvider.notifier).loadDashboard(),
+                          child: Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                _buildTodaySummary(homeState),
               SizedBox(height: 16),
               _buildQuickActions(context),
               SizedBox(height: 16),

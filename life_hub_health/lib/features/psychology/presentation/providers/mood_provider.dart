@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../shared/models/daily_mood.dart';
 import '../../../../shared/providers/providers.dart';
 import '../../../psychology/domain/repositories/psychology_repository.dart';
@@ -58,7 +59,7 @@ class MoodNotifier extends StateNotifier<MoodState> {
       final latest = await _repository.getLatestMood();
       state = state.copyWith(isLoading: false, moods: moods, latestMood: latest);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
     }
   }
 
@@ -77,7 +78,7 @@ class MoodNotifier extends StateNotifier<MoodState> {
       await loadMoods();
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorHandler.getFriendlyMessage(e));
       return false;
     }
   }

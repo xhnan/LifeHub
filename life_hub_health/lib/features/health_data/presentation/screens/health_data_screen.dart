@@ -90,9 +90,25 @@ class _HealthDataScreenState extends ConsumerState<HealthDataScreen>
             indicatorColor: AppColors.primary,
           ),
         ),
-        body: state.isLoading && state.activities.isEmpty
-            ? Center(child: CircularProgressIndicator())
-            : TabBarView(
+        body: state.error != null && state.activities.isEmpty && state.dietLogs.isEmpty && state.weightLogs.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                    SizedBox(height: 16),
+                    Text(state.error!, style: TextStyle(fontSize: 14, color: AppColors.error), textAlign: TextAlign.center),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref.read(healthDataProvider.notifier).loadAll(),
+                      child: Text('重试'),
+                    ),
+                  ],
+                ),
+              )
+            : state.isLoading && state.activities.isEmpty
+                ? Center(child: CircularProgressIndicator())
+                : TabBarView(
                 controller: _tabController,
                 children: [
                   _buildActivitiesTab(state),
@@ -215,7 +231,10 @@ class _HealthDataScreenState extends ConsumerState<HealthDataScreen>
                 children: [
                   Text('步数趋势', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   SizedBox(height: 16),
-                  SummaryChart(summaries: [state.todaySummary!]),
+                  if (state.summaryHistory.isNotEmpty)
+                    SummaryChart(summaries: state.summaryHistory)
+                  else
+                    SummaryChart(summaries: [state.todaySummary!]),
                 ],
               ),
             ),

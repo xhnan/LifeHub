@@ -34,7 +34,14 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
       caloriesBurned: _caloriesController.text.isNotEmpty ? double.parse(_caloriesController.text) : null,
       description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
     );
-    if (success && mounted) context.pop();
+    if (success && mounted) {
+      context.pop();
+    } else if (mounted) {
+      final error = ref.read(healthDataProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error ?? '添加运动记录失败')),
+      );
+    }
   }
 
   @override

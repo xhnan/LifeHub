@@ -30,13 +30,33 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
       ),
       body: state.isLoading
           ? Center(child: CircularProgressIndicator())
-          : state.checkins.isEmpty
-              ? _buildEmptyState()
-              : _buildCheckinList(state.checkins),
+          : state.error != null && state.checkins.isEmpty
+              ? _buildErrorState(state.error!, () => ref.read(checkinsProvider.notifier).loadCheckins())
+              : state.checkins.isEmpty
+                  ? _buildEmptyState()
+                  : _buildCheckinList(state.checkins),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCheckinDialog(context),
         backgroundColor: AppColors.primary,
         child: Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error, VoidCallback onRetry) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: AppColors.error),
+          SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(error, style: TextStyle(fontSize: 14, color: AppColors.error), textAlign: TextAlign.center),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(onPressed: onRetry, child: Text('重试')),
+        ],
       ),
     );
   }
@@ -368,6 +388,11 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('打卡成功！')),
+                  );
+                } else if (mounted) {
+                  final error = ref.read(checkinsProvider).error;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(error ?? '打卡失败')),
                   );
                 }
               },
