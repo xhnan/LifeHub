@@ -135,9 +135,16 @@ export default {
 
 .bar {
 	width: 24rpx;
+	min-width: 24rpx;
 	border-radius: 8rpx 8rpx 0 0;
 	position: relative;
 	transition: height 0.3s ease;
+}
+
+.income-bar,
+.expense-bar {
+	width: 24rpx;
+	min-width: 24rpx;
 }
 
 .income-bar {

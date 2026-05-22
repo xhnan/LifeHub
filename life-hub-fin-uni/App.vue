@@ -7,6 +7,10 @@
 	export default {
 		onLaunch: function() {
 			console.log('App Launch')
+			// 检查登录状态，未登录则跳转
+			if (!isLoggedIn()) {
+				uni.reLaunch({ url: '/pages/login/login' })
+			}
 		},
 		onShow: function() {
 			console.log('App Show')
@@ -24,16 +28,15 @@
 
 	function checkLogin(url) {
 		if (!url) return true
-		// 提取路径部分
 		const path = url.split('?')[0]
 		if (whiteList.includes(path)) return true
 		if (isLoggedIn()) return true
 		// 未登录，跳转到登录页
-		uni.reLaunch({ url: '/pages/login/login' })
+		originalReLaunch({ url: '/pages/login/login' })
 		return false
 	}
 
-	// 拦截路由跳转
+	// 拦截路由跳转（使用 originalReLaunch 避免递归）
 	uni.navigateTo = function(options) {
 		if (checkLogin(options.url)) {
 			originalNavigateTo(options)
@@ -59,15 +62,16 @@
 <style lang="scss">
 	/* 全局公共样式 */
 	page {
-		background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+		background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 40%, #f8fafc 100%);
 		min-height: 100vh;
-		font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
 		color: #1a1a1a;
+		-webkit-font-smoothing: antialiased;
 	}
 
 	/* 金额字体 */
 	.money-font {
-		font-family: 'Georgia', 'DIN Alternate', 'Times New Roman', serif;
+		font-family: 'DIN Alternate', 'Georgia', 'Helvetica Neue', monospace;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -84,5 +88,38 @@
 	/* 安全区域底部 padding */
 	.safe-bottom {
 		padding-bottom: env(safe-area-inset-bottom);
+	}
+
+	/* 全局卡片阴影 */
+	.card-shadow {
+		box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+	}
+
+	/* 全局过渡 */
+	view, text {
+		transition-property: background-color, color, border-color, opacity;
+		transition-duration: 0.15s;
+		transition-timing-function: ease-out;
+	}
+
+	/* 按压反馈 */
+	.pressable {
+		transition: transform 0.1s ease;
+
+		&:active {
+			transform: scale(0.97);
+		}
+	}
+
+	/* 隐藏滚动条 */
+	::-webkit-scrollbar {
+		display: none;
+		width: 0;
+		height: 0;
+	}
+
+	/* Toast 自定义样式 */
+	.uni-toast {
+		border-radius: 16rpx !important;
 	}
 </style>

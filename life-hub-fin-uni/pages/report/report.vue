@@ -82,6 +82,11 @@ export default {
 	onShow() {
 		this.loadData()
 	},
+	onPullDownRefresh() {
+		this.loadData().finally(() => {
+			uni.stopPullDownRefresh()
+		})
+	},
 	methods: {
 		async loadData() {
 			const [summaryRes, expRankRes, incRankRes] = await Promise.allSettled([

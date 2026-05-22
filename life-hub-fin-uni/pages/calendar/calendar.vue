@@ -41,6 +41,11 @@ export default {
 	onShow() {
 		this.loadMonthData(this.currentYear, this.currentMonth)
 	},
+	onPullDownRefresh() {
+		this.loadMonthData(this.currentYear, this.currentMonth).finally(() => {
+			uni.stopPullDownRefresh()
+		})
+	},
 	methods: {
 		async loadMonthData(year, month) {
 			const [summaryRes, recordsRes] = await Promise.allSettled([
