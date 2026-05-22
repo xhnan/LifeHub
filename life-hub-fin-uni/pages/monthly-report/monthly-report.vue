@@ -28,6 +28,14 @@
 		<view class="section">
 			<TopTransactions :incomeTop="incomeTop3" :expenseTop="expenseTop3" />
 		</view>
+		<view class="section">
+			<AiInsight
+				:report="aiReport"
+				:loading="aiLoading"
+				:error="aiError"
+				@refresh="loadAiInsight"
+			/>
+		</view>
 		<view style="height: 40rpx;"></view>
 	</view>
 </template>
@@ -38,17 +46,21 @@ import DailyTrend from '../../components/DailyTrend/DailyTrend.vue'
 import DonutChart from '../../components/DonutChart/DonutChart.vue'
 import KeyMetrics from '../../components/KeyMetrics/KeyMetrics.vue'
 import TopTransactions from '../../components/TopTransactions/TopTransactions.vue'
-import { getMonthlyReport } from '../../api/index.js'
+import AiInsight from '../../components/AiInsight/AiInsight.vue'
+import { getMonthlyReport, getMonthlyAiInsight } from '../../api/index.js'
 import { records as mockRecords } from '../../mock/data.js'
 
 export default {
-	components: { HealthScore, DailyTrend, DonutChart, KeyMetrics, TopTransactions },
+	components: { HealthScore, DailyTrend, DonutChart, KeyMetrics, TopTransactions, AiInsight },
 	data() {
 		const now = new Date()
 		return {
 			year: now.getFullYear(),
 			month: now.getMonth() + 1,
-			report: null
+			report: null,
+			aiReport: null,
+			aiLoading: false,
+			aiError: ''
 		}
 	},
 	computed: {
@@ -122,6 +134,21 @@ export default {
 				if (res) this.report = res
 			} catch (e) {
 				// fallback 到 computed 中的 mock 数据
+			}
+			// 同时加载 AI 解读
+			this.loadAiInsight()
+		},
+		async loadAiInsight() {
+			this.aiLoading = true
+			this.aiError = ''
+			this.aiReport = null
+			try {
+				const res = await getMonthlyAiInsight(this.year, this.month)
+				if (res) this.aiReport = res
+			} catch (e) {
+				this.aiError = e.message || 'AI 分析失败'
+			} finally {
+				this.aiLoading = false
 			}
 		},
 		prevMonth() {

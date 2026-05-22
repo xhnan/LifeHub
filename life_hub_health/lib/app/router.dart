@@ -8,6 +8,7 @@ import '../features/health_data/presentation/screens/health_data_screen.dart';
 import '../features/health_data/presentation/screens/add_activity_screen.dart';
 import '../features/health_data/presentation/screens/add_diet_screen.dart';
 import '../features/health_data/presentation/screens/add_weight_screen.dart';
+import '../features/health_data/presentation/screens/health_stats_screen.dart';
 import '../features/ai_chat/presentation/screens/ai_chat_screen.dart';
 import '../features/psychology/presentation/screens/psychology_screen.dart';
 import '../features/psychology/presentation/screens/assessment_screen.dart';
@@ -19,6 +20,15 @@ import '../features/profile/presentation/screens/user_preferences_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/profile/presentation/screens/health_profile_screen.dart';
 import '../features/profile/presentation/screens/psy_profile_view_screen.dart';
+import '../features/profile/presentation/screens/data_export_screen.dart';
+import '../features/goals/presentation/screens/goals_screen.dart';
+import '../features/goals/presentation/screens/add_goal_screen.dart';
+import '../features/sleep/presentation/screens/sleep_screen.dart';
+import '../features/sleep/presentation/screens/add_sleep_screen.dart';
+import '../features/water/presentation/screens/water_screen.dart';
+import '../features/reports/presentation/screens/health_report_screen.dart';
+import '../features/achievements/presentation/screens/achievements_screen.dart';
+import '../features/notifications/presentation/screens/reminders_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -64,6 +74,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'add-weight',
                 builder: (context, state) => AddWeightScreen(),
+              ),
+              GoRoute(
+                path: 'stats',
+                builder: (context, state) => HealthStatsScreen(),
               ),
             ],
           ),
@@ -114,6 +128,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'psy-profile',
                 builder: (context, state) => PsyProfileViewScreen(),
+              ),
+              GoRoute(
+                path: 'goals',
+                builder: (context, state) => GoalsScreen(),
+              ),
+              GoRoute(
+                path: 'goals/add',
+                builder: (context, state) => AddGoalScreen(),
+              ),
+              GoRoute(
+                path: 'sleep',
+                builder: (context, state) => SleepScreen(),
+              ),
+              GoRoute(
+                path: 'sleep/add',
+                builder: (context, state) => AddSleepScreen(),
+              ),
+              GoRoute(
+                path: 'water',
+                builder: (context, state) => WaterScreen(),
+              ),
+              GoRoute(
+                path: 'reports',
+                builder: (context, state) => HealthReportScreen(),
+              ),
+              GoRoute(
+                path: 'achievements',
+                builder: (context, state) => AchievementsScreen(),
+              ),
+              GoRoute(
+                path: 'reminders',
+                builder: (context, state) => RemindersScreen(),
+              ),
+              GoRoute(
+                path: 'data-export',
+                builder: (context, state) => DataExportScreen(),
               ),
             ],
           ),

@@ -22,40 +22,52 @@ const _sentinel = Object();
 
 class HealthDataState {
   final bool isLoading;
+  final bool isLoadingMore;
   final List<HealthActivity> activities;
   final List<DietLog> dietLogs;
   final List<WeightLog> weightLogs;
   final DailySummary? todaySummary;
   final List<DailySummary> summaryHistory;
   final String? error;
+  final bool hasMoreActivities;
+  final bool hasMoreDietLogs;
 
   HealthDataState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.activities = const [],
     this.dietLogs = const [],
     this.weightLogs = const [],
     this.todaySummary,
     this.summaryHistory = const [],
     this.error,
+    this.hasMoreActivities = true,
+    this.hasMoreDietLogs = true,
   });
 
   HealthDataState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     List<HealthActivity>? activities,
     List<DietLog>? dietLogs,
     List<WeightLog>? weightLogs,
     Object? todaySummary = _sentinel,
     List<DailySummary>? summaryHistory,
     String? error,
+    bool? hasMoreActivities,
+    bool? hasMoreDietLogs,
   }) {
     return HealthDataState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       activities: activities ?? this.activities,
       dietLogs: dietLogs ?? this.dietLogs,
       weightLogs: weightLogs ?? this.weightLogs,
       todaySummary: todaySummary == _sentinel ? this.todaySummary : todaySummary as DailySummary?,
       summaryHistory: summaryHistory ?? this.summaryHistory,
       error: error,
+      hasMoreActivities: hasMoreActivities ?? this.hasMoreActivities,
+      hasMoreDietLogs: hasMoreDietLogs ?? this.hasMoreDietLogs,
     );
   }
 }

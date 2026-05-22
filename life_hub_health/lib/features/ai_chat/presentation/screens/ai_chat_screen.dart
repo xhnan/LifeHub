@@ -13,50 +13,57 @@ final chatMessagesProvider = StateNotifierProvider<ChatMessagesNotifier, List<Ch
 
 class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
   final SseService _sseService;
+  bool _isStreaming = false;
+  int _streamingIndex = -1;
 
   ChatMessagesNotifier(this._sseService) : super([]);
 
-  Future<void> sendMessage(String content) async {
-    // Add user message
-    state = [...state, ChatMessage(role: 'user', content: content)];
+  bool get isStreaming => _isStreaming;
 
-    // Add streaming placeholder
+  Future<void> sendMessage(String content) async {
+    if (_isStreaming) return;
+
+    state = [...state, ChatMessage(role: 'user', content: content)];
     state = [...state, ChatMessage(role: 'assistant', content: '', isStreaming: true)];
+
+    _isStreaming = true;
+    _streamingIndex = state.length - 1;
 
     try {
       final stream = await _sseService.streamChat(message: content);
 
       await for (final event in stream) {
+        if (!_isStreaming || _streamingIndex >= state.length || !state[_streamingIndex].isStreaming) break;
+
         if (event.data != null) {
           final data = jsonDecode(event.data!);
           final eventType = data['type'] as String?;
 
           if (eventType == 'delta') {
             final chunk = data['content'] as String? ?? '';
-            final lastMessage = state.last;
-            final updatedMessage = lastMessage.copyWith(
-              content: lastMessage.content + chunk,
-            );
-            state = [...state.sublist(0, state.length - 1), updatedMessage];
+            final current = state[_streamingIndex];
+            state = [...state.sublist(0, _streamingIndex), current.copyWith(content: current.content + chunk), ...state.sublist(_streamingIndex + 1)];
           } else if (eventType == 'complete') {
-            final lastMessage = state.last;
-            final updatedMessage = lastMessage.copyWith(isStreaming: false);
-            state = [...state.sublist(0, state.length - 1), updatedMessage];
+            final current = state[_streamingIndex];
+            state = [...state.sublist(0, _streamingIndex), current.copyWith(isStreaming: false), ...state.sublist(_streamingIndex + 1)];
             break;
           }
         }
       }
     } catch (e) {
-      final lastMessage = state.last;
-      final updatedMessage = lastMessage.copyWith(
-        content: '抱歉，发生了错误：${e.toString()}',
-        isStreaming: false,
-      );
-      state = [...state.sublist(0, state.length - 1), updatedMessage];
+      if (_streamingIndex < state.length && state[_streamingIndex].isStreaming) {
+        final current = state[_streamingIndex];
+        state = [...state.sublist(0, _streamingIndex), current.copyWith(content: '抱歉，发生了错误：${e.toString()}', isStreaming: false), ...state.sublist(_streamingIndex + 1)];
+      }
+    } finally {
+      _isStreaming = false;
+      _streamingIndex = -1;
     }
   }
 
   void clearMessages() {
+    _isStreaming = false;
+    _streamingIndex = -1;
     state = [];
   }
 }
@@ -82,6 +89,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   void _sendMessage() {
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
+    if (ref.read(chatMessagesProvider.notifier).isStreaming) return;
 
     _messageController.clear();
     ref.read(chatMessagesProvider.notifier).sendMessage(message);
@@ -195,7 +203,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             ),
           ],
         ),
-        child: message.isStreaming
+        child: message.isStreaming && message.content.isEmpty
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -218,7 +226,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 ],
               )
             : Text(
-                message.content,
+                message.content + (message.isStreaming ? '▎' : ''),
                 style: TextStyle(
                   color: message.role == 'user' ? Colors.white : AppColors.textPrimary,
                   fontSize: 14,

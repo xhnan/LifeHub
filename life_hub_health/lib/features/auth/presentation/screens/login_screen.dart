@@ -43,7 +43,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
+        child: authState.isLoading && authState.error == null
+            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(24),
             child: Form(

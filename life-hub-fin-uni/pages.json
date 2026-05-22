@@ -13,7 +13,7 @@
 			"style": {
 				"navigationBarTitleText": "资产总览",
 				"navigationBarBackgroundColor": "#ecfdf5",
-				"enablePullDownRefresh": false
+				"enablePullDownRefresh": true
 			}
 		},
 		{
@@ -21,7 +21,7 @@
 			"style": {
 				"navigationBarTitleText": "收支明细",
 				"navigationBarBackgroundColor": "#ecfdf5",
-				"enablePullDownRefresh": false
+				"enablePullDownRefresh": true
 			}
 		},
 		{
@@ -29,7 +29,7 @@
 			"style": {
 				"navigationBarTitleText": "日历",
 				"navigationBarBackgroundColor": "#ecfdf5",
-				"enablePullDownRefresh": false
+				"enablePullDownRefresh": true
 			}
 		},
 		{
@@ -37,7 +37,7 @@
 			"style": {
 				"navigationBarTitleText": "月度报表",
 				"navigationBarBackgroundColor": "#ecfdf5",
-				"enablePullDownRefresh": false
+				"enablePullDownRefresh": true
 			}
 		},
 		{
@@ -52,6 +52,38 @@
 			"path": "pages/profile/profile",
 			"style": {
 				"navigationBarTitleText": "个人中心",
+				"navigationBarBackgroundColor": "#ecfdf5",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/add-record/add-record",
+			"style": {
+				"navigationBarTitleText": "记一笔",
+				"navigationBarBackgroundColor": "#f8fafb",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/settings/settings",
+			"style": {
+				"navigationBarTitleText": "设置",
+				"navigationBarBackgroundColor": "#ecfdf5",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/about/about",
+			"style": {
+				"navigationBarTitleText": "关于",
+				"navigationBarBackgroundColor": "#ecfdf5",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/ai-chat/ai-chat",
+			"style": {
+				"navigationBarTitleText": "财务 AI 助手",
 				"navigationBarBackgroundColor": "#ecfdf5",
 				"enablePullDownRefresh": false
 			}

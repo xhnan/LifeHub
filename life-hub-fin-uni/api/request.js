@@ -45,8 +45,13 @@ export function get(url, data) {
 	return request({ url, method: 'GET', data })
 }
 
-export function post(url, data, noAuth = false) {
-	return request({ url, method: 'POST', data, noAuth })
+export function post(url, data, noAuth = false, params) {
+	let finalUrl = url
+	if (params && Object.keys(params).length > 0) {
+		const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')
+		finalUrl = url + (url.includes('?') ? '&' : '?') + qs
+	}
+	return request({ url: finalUrl, method: 'POST', data, noAuth })
 }
 
 export function put(url, data) {

@@ -1,4 +1,4 @@
-import { get, post } from './request.js'
+import { get, post, put, del } from './request.js'
 
 // ========== 认证 ==========
 
@@ -6,8 +6,12 @@ export function loginByAccount(username, password) {
 	return post('/auth/login', { username, password }, true)
 }
 
-export function loginByWx(code) {
-	return post('/auth/wx-login', { code }, true)
+export function loginByWx(code, userInfo) {
+	return post('/auth/wx-login', { code, userInfo }, true)
+}
+
+export function loginByPhone(data) {
+	return post('/auth/wx-phone-login', data, true)
 }
 
 export function getProfile() {
@@ -66,4 +70,47 @@ export function getMonthlyRank(year, month, type, bookId) {
 
 export function getMonthlyReport(year, month, bookId) {
 	return get('/app/fin/monthly-report', { year, month, ...(bookId ? { bookId } : {}) })
+}
+
+// ========== 记录增删改 ==========
+
+export function addRecord(data) {
+	return post('/app/fin/records', data)
+}
+
+export function updateRecord(id, data) {
+	return put(`/app/fin/records/${id}`, data)
+}
+
+export function deleteRecord(id) {
+	return del(`/app/fin/records/${id}`)
+}
+
+
+// ========== AI 助手 ==========
+
+/**
+ * 月度财务智能分析
+ */
+export function getMonthlyAiInsight(year, month, bookId) {
+	const params = {}
+	if (year) params.year = year
+	if (month) params.month = month
+	if (bookId) params.bookId = bookId
+	return post('/app/fin/ai/analyze', null, false, params)
+}
+
+/**
+ * 支出异常检测
+ */
+export function detectAnomalies(bookId) {
+	return get('/app/fin/ai/anomalies', bookId ? { bookId } : {})
+}
+
+/**
+ * 获取 AI 聊天的完整 URL（用于 SSE 直接连接）
+ */
+export function getAiChatStreamUrl() {
+	const { BASE_URL } = require('./config.js')
+	return BASE_URL + '/app/fin/ai/chat/stream'
 }

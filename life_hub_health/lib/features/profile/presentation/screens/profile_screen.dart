@@ -84,78 +84,152 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildMenuSection(BuildContext context) {
-    return Card(
-      child: Column(
-        children: [
-          _buildMenuItem(
-            icon: Icons.health_and_safety,
-            label: '健康档案',
-            onTap: () => context.push('/profile/health-profile'),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 健康管理
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('健康管理', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        ),
+        Card(
+          child: Column(
+            children: [
+              _buildMenuItem(
+                icon: Icons.health_and_safety,
+                label: '健康档案',
+                onTap: () => context.push('/profile/health-profile'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.psychology,
+                label: '心理档案',
+                onTap: () => context.push('/profile/psy-profile'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.flag,
+                label: '健康目标',
+                onTap: () => context.push('/profile/goals'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.bedtime,
+                label: '睡眠追踪',
+                onTap: () => context.push('/profile/sleep'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.water_drop,
+                label: '饮水追踪',
+                onTap: () => context.push('/profile/water'),
+              ),
+            ],
           ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.psychology,
-            label: '心理档案',
-            onTap: () => context.push('/profile/psy-profile'),
+        ),
+        SizedBox(height: 16),
+
+        // AI 与计划
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('AI 与计划', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        ),
+        Card(
+          child: Column(
+            children: [
+              _buildMenuItem(
+                icon: Icons.auto_awesome,
+                label: 'AI 建议',
+                onTap: () => context.push('/profile/advice-records'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.assignment,
+                label: '跟踪计划',
+                onTap: () => context.push('/profile/followup-plans'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.checklist,
+                label: '打卡记录',
+                onTap: () => context.push('/profile/checkin'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.psychology_alt,
+                label: 'AI 偏好设置',
+                onTap: () => context.push('/profile/preferences'),
+              ),
+            ],
           ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.flag,
-            label: '健康目标',
-            onTap: () {},
+        ),
+        SizedBox(height: 16),
+
+        // 统计与成就
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('统计与成就', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        ),
+        Card(
+          child: Column(
+            children: [
+              _buildMenuItem(
+                icon: Icons.bar_chart,
+                label: '健康报告',
+                onTap: () => context.push('/profile/reports'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.emoji_events,
+                label: '成就墙',
+                onTap: () => context.push('/profile/achievements'),
+              ),
+            ],
           ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.auto_awesome,
-            label: 'AI 建议',
-            onTap: () {
-              context.push('/profile/advice-records');
-            },
+        ),
+        SizedBox(height: 16),
+
+        // 设置
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('设置', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+        ),
+        Card(
+          child: Column(
+            children: [
+              _buildMenuItem(
+                icon: Icons.notifications_outlined,
+                label: '提醒设置',
+                onTap: () => context.push('/profile/reminders'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.download,
+                label: '数据导出',
+                onTap: () => context.push('/profile/data-export'),
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.privacy_tip,
+                label: '隐私设置',
+                onTap: () {},
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.help_outline,
+                label: '帮助与反馈',
+                onTap: () {},
+              ),
+              Divider(height: 1),
+              _buildMenuItem(
+                icon: Icons.info_outline,
+                label: '关于',
+                onTap: () {},
+              ),
+            ],
           ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.assignment,
-            label: '跟踪计划',
-            onTap: () {
-              context.push('/profile/followup-plans');
-            },
-          ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.checklist,
-            label: '打卡记录',
-            onTap: () {
-              context.push('/profile/checkin');
-            },
-          ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.psychology_alt,
-            label: 'AI 偏好设置',
-            onTap: () {
-              context.push('/profile/preferences');
-            },
-          ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.privacy_tip,
-            label: '隐私设置',
-            onTap: () {},
-          ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.help_outline,
-            label: '帮助与反馈',
-            onTap: () {},
-          ),
-          Divider(height: 1),
-          _buildMenuItem(
-            icon: Icons.info_outline,
-            label: '关于',
-            onTap: () {},
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

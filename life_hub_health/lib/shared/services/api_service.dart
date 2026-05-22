@@ -7,6 +7,7 @@ class ApiService {
   final Dio _dio;
   final LocalStorageService _localStorageService;
   bool _isRefreshing = false;
+  final List<_QueuedRequest> _pendingRequests = [];
 
   ApiService(this._localStorageService) : _dio = Dio() {
     _dio.options.baseUrl = AppConstants.baseUrl;
@@ -31,19 +32,44 @@ class ApiService {
         handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401 && !_isRefreshing) {
+        if (error.response?.statusCode == 401) {
+          if (_isRefreshing) {
+            // 正在刷新中，排队等待
+            _pendingRequests.add(_QueuedRequest(error.requestOptions, handler));
+            return;
+          }
           _isRefreshing = true;
           try {
             final refreshed = await _refreshToken();
             if (refreshed) {
+              // 重试当前请求
               final token = await _localStorageService.getToken();
               error.requestOptions.headers['Authorization'] = 'Bearer $token';
               final response = await _dio.fetch(error.requestOptions);
               handler.resolve(response);
+
+              // 重试所有排队的请求
+              for (final pending in _pendingRequests) {
+                pending.options.headers['Authorization'] = 'Bearer $token';
+                try {
+                  final resp = await _dio.fetch(pending.options);
+                  pending.handler.resolve(resp);
+                } catch (e) {
+                  if (e is DioException) {
+                    pending.handler.reject(e);
+                  }
+                }
+              }
+              _pendingRequests.clear();
               return;
             }
           } finally {
             _isRefreshing = false;
+            // 如果刷新失败，拒绝所有排队请求
+            for (final pending in _pendingRequests) {
+              pending.handler.reject(error);
+            }
+            _pendingRequests.clear();
           }
         }
         handler.next(error);
@@ -130,4 +156,12 @@ class ApiService {
   Future<Response> delete(String path) async {
     return _dio.delete(path);
   }
+}
+
+/// 排队等待 token 刷新完成的请求
+class _QueuedRequest {
+  final RequestOptions options;
+  final ErrorInterceptorHandler handler;
+
+  _QueuedRequest(this.options, this.handler);
 }

@@ -62,6 +62,16 @@ class _HealthDataScreenState extends ConsumerState<HealthDataScreen>
               title: Text('体重记录'),
               onTap: () { Navigator.pop(context); context.push('/health-data/add-weight'); },
             ),
+            ListTile(
+              leading: CircleAvatar(backgroundColor: Colors.indigo.withOpacity(0.1), child: Icon(Icons.bedtime, color: Colors.indigo)),
+              title: Text('睡眠记录'),
+              onTap: () { Navigator.pop(context); context.push('/profile/sleep/add'); },
+            ),
+            ListTile(
+              leading: CircleAvatar(backgroundColor: Colors.blue.withOpacity(0.1), child: Icon(Icons.water_drop, color: Colors.blue)),
+              title: Text('饮水记录'),
+              onTap: () { Navigator.pop(context); context.push('/profile/water'); },
+            ),
           ],
         ),
       ),
@@ -77,6 +87,13 @@ class _HealthDataScreenState extends ConsumerState<HealthDataScreen>
       child: Scaffold(
         appBar: AppBar(
           title: Text('健康数据'),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.bar_chart),
+              tooltip: '数据统计',
+              onPressed: () => context.push('/health-data/stats'),
+            ),
+          ],
           bottom: TabBar(
             controller: _tabController,
             tabs: [

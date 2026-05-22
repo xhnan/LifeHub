@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../providers/mood_provider.dart';
+import '../widgets/mood_heatmap_calendar.dart';
 
 class PsychologyScreen extends ConsumerWidget {
   const PsychologyScreen({super.key});
@@ -23,6 +24,13 @@ class PsychologyScreen extends ConsumerWidget {
           children: [
             _buildMoodTracker(context, ref),
             SizedBox(height: 16),
+            // 心情热力日历
+            if (moodState.moods.isNotEmpty)
+              MoodHeatmapCalendar(
+                moods: moodState.moods,
+                month: DateTime.now(),
+              ),
+            if (moodState.moods.isNotEmpty) SizedBox(height: 16),
             _buildQuickActions(context),
             SizedBox(height: 16),
             _buildRecentMoods(moodState),
