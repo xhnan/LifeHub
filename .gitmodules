@@ -16,3 +16,6 @@
 [submodule "life_hub_health"]
 	path = life_hub_health
 	url = https://github.com/xhnan/life_hub_health.git
+[submodule "life-hub-fin-uni"]
+	path = life-hub-fin-uni
+	url = git@github.com:xhnan/life-hub-fin-uni.git
